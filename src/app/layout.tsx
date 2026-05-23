@@ -1,24 +1,46 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Thai } from "next/font/google";
+import { AppShellProvider } from "@/components/layout/app-shell";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-const notoThai = Noto_Sans_Thai({ subsets: ["thai"], variable: "--font-thai" });
-
 export const metadata: Metadata = {
-  title: "Mini BigC · Branch Operations",
-  description: "Branch management console",
+  title: "Mini BigC · Manager Console",
+  description: "Branch operations console for Mini BigC retail managers",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="th" suppressHydrationWarning>
-      <body
-        className={`${geist.variable} ${geistMono.variable} ${notoThai.variable} font-[family-name:var(--font-geist),var(--font-thai)] antialiased`}
-      >
-        <TooltipProvider>{children}</TooltipProvider>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-background text-foreground">
+        <TooltipProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            <AppShellProvider>{children}</AppShellProvider>
+            <Toaster richColors position="bottom-center" />
+          </ThemeProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

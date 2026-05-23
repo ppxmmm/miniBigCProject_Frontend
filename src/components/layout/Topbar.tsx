@@ -1,60 +1,91 @@
 "use client";
 
-import { Bell, Globe, Moon, Search } from "lucide-react";
+import * as React from "react";
+import { useTheme } from "next-themes";
+import { Search, Globe, Moon, Sun, Bell, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  Avatar,
-  AvatarFallback,
-} from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getT } from "@/lib/i18n";
+import type { CurrentUser, Lang } from "@/types";
 
-export function Topbar() {
+interface TopbarProps {
+  lang: Lang;
+  toggleLang: () => void;
+  showSearch: boolean;
+  currentUser: CurrentUser;
+  onOpenSidebar: () => void;
+}
+
+export function Topbar({
+  lang,
+  toggleLang,
+  showSearch,
+  currentUser,
+  onOpenSidebar,
+}: TopbarProps) {
+  const tx = getT(lang);
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const isDark = mounted && resolvedTheme === "dark";
+
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b pl-4 pr-0 md:pl-6 md:pr-0">
-      <SidebarTrigger className="-ml-1" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+    <header className="sticky top-0 z-30 flex h-15 items-center gap-3 border-b bg-card px-5 md:px-6">
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        onClick={onOpenSidebar}
+        className="md:hidden"
+      >
+        <Menu />
+      </Button>
 
-      <div className="relative hidden md:block w-full max-w-md">
-        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="ค้นหาสินค้า, ออเดอร์, ลูกค้า…"
-          className="pl-9 pr-16 bg-muted/50 h-9"
-        />
-      </div>
+      {showSearch && (
+        <div className="relative hidden flex-1 md:block md:max-w-md">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder={tx.common.search}
+            className="h-9.5 bg-muted pl-9 pr-12"
+          />
+        </div>
+      )}
+      <div className="flex-1 md:hidden" />
 
-      <div className="flex-1" />
-
-      <div className="flex shrink-0 items-center gap-3">
-        <Button variant="ghost" size="sm" className="gap-1.5">
-          <Globe className="size-4" />
-          <span className="font-mono text-xs uppercase">TH</span>
-        </Button>
-        <Button variant="ghost" size="icon" aria-label="Toggle theme">
-          <Moon className="size-4" />
+      <div className="ml-auto flex items-center gap-1.5">
+        <Button size="sm" variant="ghost" onClick={toggleLang} title="Language">
+          <Globe />
+          <span className="font-mono text-[11px] uppercase">{lang}</span>
         </Button>
         <Button
+          size="icon-sm"
           variant="ghost"
-          size="icon"
-          aria-label="Notifications"
-          className="relative"
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          title="Theme"
         >
-          <Bell className="size-4" />
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-destructive ring-2 ring-background" />
+          {isDark ? <Sun /> : <Moon />}
         </Button>
-
-        <Separator orientation="vertical" className="mx-0 h-9" />
-
-        <div className="flex items-center gap-2 pl-0">
-          <Avatar>
-            <AvatarFallback className="bg-emerald-500 text-white text-xs font-semibold">
-              PT
+        <div className="relative">
+          <Button size="icon-sm" variant="ghost">
+            <Bell />
+          </Button>
+          <span className="absolute right-1.5 top-1.5 size-1.75 rounded-full bg-destructive ring-2 ring-card" />
+        </div>
+        <Separator orientation="vertical" className="mx-1 hidden h-5 md:block" />
+        <div className="hidden items-center gap-2 md:flex">
+          <Avatar className="size-7">
+            <AvatarFallback className="bg-primary-50 text-[11px] font-semibold text-primary">
+              {currentUser.initials}
             </AvatarFallback>
           </Avatar>
-          <div className="hidden md:flex flex-col leading-tight">
-            <span className="text-sm font-semibold">ปริญญา</span>
-            <span className="text-xs text-muted-foreground">ผู้จัดการสาขา</span>
+          <div className="leading-tight">
+            <div className="text-[12.5px] font-semibold">
+              {currentUser.name.split(" ")[0]}
+            </div>
+            <div className="text-[10.5px] text-muted-foreground">
+              {currentUser.role}
+            </div>
           </div>
         </div>
       </div>
