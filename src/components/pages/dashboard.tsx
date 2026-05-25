@@ -31,33 +31,36 @@ import { LineChart } from "@/components/charts/line-chart";
 import { Donut } from "@/components/charts/donut";
 import { PageHeader } from "@/components/page-helpers";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  CATEGORY,
-  DAILY,
-  DAILY_LAST,
-  DELIVERIES,
-  EXPIRING,
-  HOURS,
-  HOURLY,
-  HOURLY_YEST,
-  LOW_STOCK,
-  MONTHLY,
-  STORE,
-  TOP_PRODUCTS,
-} from "@/lib/data";
 import { fmtMoney, fmtNum, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchData } from "@/providers/branch-data-provider";
 
 type ChartRange = "hourly" | "weekly" | "monthly";
 
 export function DashboardPage() {
   const router = useRouter();
   const { lang, role } = useAppShell();
+  const { data: branch, loading, error, source } = useBranchData();
   const t = getT(lang);
   const isStaff = role === "staff";
   const [chartRange, setChartRange] = React.useState<ChartRange>("hourly");
+
+  const {
+    store: STORE,
+    hours: HOURS,
+    hourly: HOURLY,
+    hourlyYest: HOURLY_YEST,
+    daily: DAILY,
+    dailyLast: DAILY_LAST,
+    monthly: MONTHLY,
+    category: CATEGORY,
+    topProducts: TOP_PRODUCTS,
+    expiring: EXPIRING,
+    lowStock: LOW_STOCK,
+    deliveries: DELIVERIES,
+  } = branch;
 
   const todayTotal = HOURLY.reduce((s, v) => s + v, 0);
   const yestTotal = HOURLY_YEST.reduce((s, v) => s + v, 0);
@@ -97,7 +100,19 @@ export function DashboardPage() {
   const userName = isStaff ? STORE.staff[lang] : STORE.manager[lang];
 
   return (
-    <div className="fade-in">
+    <div className="fade-in space-y-4">
+      {error && source === "static" && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-100">
+          {lang === "th"
+            ? `ไม่สามารถเชื่อมต่อ API — แสดงข้อมูลสำรอง (${error})`
+            : `API unavailable — showing offline data (${error})`}
+        </div>
+      )}
+      {loading && (
+        <div className="text-sm text-muted-foreground">
+          {lang === "th" ? "กำลังโหลดข้อมูลจากเซิร์ฟเวอร์…" : "Loading data from server…"}
+        </div>
+      )}
       <PageHeader
         title={`${greeting}, ${userName.split(" ")[0]} 👋`}
         sub={`${t.dash.welcomeSub} · ${STORE.name[lang]}`}

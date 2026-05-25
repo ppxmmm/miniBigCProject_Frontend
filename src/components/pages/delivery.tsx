@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-helpers";
-import { DELIVERIES, STORE } from "@/lib/data";
+import { useBranchData } from "@/providers/branch-data-provider";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -39,9 +39,12 @@ type Tab = "active" | "completed";
 
 export function DeliveryPage() {
   const { lang, role } = useAppShell();
+  const { data: branch } = useBranchData();
   const t = getT(lang);
   const [tab, setTab] = React.useState<Tab>("active");
   const [selected, setSelected] = React.useState<string | null>(null);
+
+  const { deliveries: DELIVERIES, store: storeInfo } = branch;
 
   const active = DELIVERIES.filter(
     (d) => d.status === "enRoute" || d.status === "preparing",
@@ -80,7 +83,7 @@ export function DeliveryPage() {
     <div className="fade-in">
       <PageHeader
         title={t.deliv.title}
-        sub={`${t.deliv.from} ${STORE.short[lang]} · ${t.common.today}`}
+        sub={`${t.deliv.from} ${storeInfo.short[lang]} · ${t.common.today}`}
         right={
           <>
             <Button size="sm" variant="outline">
@@ -196,11 +199,12 @@ export function DeliveryPage() {
               {lang === "th" ? "พื้นที่จัดส่ง" : "Delivery area"}
             </CardTitle>
             <CardDescription className="text-xs">
-              {`${STORE.short[lang]} · 3 km radius`}
+              {`${storeInfo.short[lang]} · 3 km radius`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <DeliveryMap
+              storeLabel={storeInfo.short[lang]}
               deliveries={DELIVERIES}
               selected={selected}
               onSelect={setSelected}
@@ -425,13 +429,20 @@ function Field({ label, value, icon: Icon, valueClass }: FieldProps) {
 }
 
 interface DeliveryMapProps {
+  storeLabel: string;
   deliveries: Delivery[];
   selected: string | null;
   onSelect: (id: string) => void;
   lang: Lang;
 }
 
-function DeliveryMap({ deliveries, selected, onSelect, lang }: DeliveryMapProps) {
+function DeliveryMap({
+  storeLabel,
+  deliveries,
+  selected,
+  onSelect,
+  lang,
+}: DeliveryMapProps) {
   const cx = 50,
     cy = 50;
   const pinPos = (d: Delivery): [number, number] => {
@@ -559,7 +570,7 @@ function DeliveryMap({ deliveries, selected, onSelect, lang }: DeliveryMapProps)
 
       <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-44 items-center gap-1 whitespace-nowrap rounded-md border bg-card px-2 py-1 text-[11px] font-semibold shadow-sm">
         <Store className="size-3 text-primary" />
-        {STORE.short[lang]}
+        {storeLabel}
       </div>
 
       <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1 rounded-lg border bg-card/90 p-2.5 text-[11px] backdrop-blur-sm">

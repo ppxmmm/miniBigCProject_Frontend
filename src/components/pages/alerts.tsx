@@ -28,21 +28,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader, Empty } from "@/components/page-helpers";
-import { EXPIRING, LOW_STOCK } from "@/lib/data";
 import { fmtD, fmtMoney, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchData } from "@/providers/branch-data-provider";
 
 type Tab = "expired" | "low";
 type Severity = "urgent" | "warning" | "info";
 
 export function AlertsPage() {
   const { lang, role } = useAppShell();
+  const { data: branch } = useBranchData();
   const t = getT(lang);
   const [tab, setTab] = React.useState<Tab>("expired");
   const [q, setQ] = React.useState("");
   const [acknowledged, setAcknowledged] = React.useState<Set<string>>(new Set());
+
+  const { expiring: EXPIRING, lowStock: LOW_STOCK } = branch;
 
   const expiringList = EXPIRING.map((e) => {
     const daysLeft = daysBetween(e.exp);

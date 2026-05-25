@@ -22,8 +22,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/brand-mark";
-import { STORE } from "@/lib/data";
+import {
+  alertBadgeCount,
+  openDeliveryBadgeCount,
+} from "@/lib/branch-data";
 import { getT } from "@/lib/i18n";
+import { useBranchData } from "@/providers/branch-data-provider";
 import type { CurrentUser, Lang, Role } from "@/types";
 
 interface NavItemDef {
@@ -59,12 +63,27 @@ export function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const tx = getT(lang);
+  const { data: branch } = useBranchData();
+  const alertCount = alertBadgeCount(branch);
+  const deliveryCount = openDeliveryBadgeCount(branch);
 
   const NAV: NavItemDef[] = [
     { href: "/dashboard", icon: LayoutDashboard, label: tx.nav.dashboard, allow: ["manager", "staff"] },
     { href: "/revenue", icon: TrendingUp, label: tx.nav.revenue, allow: ["manager"] },
-    { href: "/alerts", icon: AlertTriangle, label: tx.nav.alerts, allow: ["manager", "staff"], badge: 7 },
-    { href: "/deliveries", icon: Truck, label: tx.nav.delivery, allow: ["manager", "staff"], badge: 4 },
+    {
+      href: "/alerts",
+      icon: AlertTriangle,
+      label: tx.nav.alerts,
+      allow: ["manager", "staff"],
+      badge: alertCount > 0 ? alertCount : undefined,
+    },
+    {
+      href: "/deliveries",
+      icon: Truck,
+      label: tx.nav.delivery,
+      allow: ["manager", "staff"],
+      badge: deliveryCount > 0 ? deliveryCount : undefined,
+    },
     { href: "/suggestions", icon: Sparkles, label: tx.nav.suggestions, allow: ["manager"] },
   ];
   const ACCOUNT: NavItemDef[] = [
@@ -103,9 +122,9 @@ export function Sidebar({
           <div className="flex items-center gap-2.5 rounded-md border bg-muted px-3 py-2.5 text-[12.5px]">
             <div className="size-2 shrink-0 rounded-full bg-primary" />
             <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{STORE.short[lang]}</div>
+              <div className="truncate font-semibold">{branch.store.short[lang]}</div>
               <div className="mono text-[10.5px] text-muted-foreground">
-                {STORE.code}
+                {branch.store.code}
               </div>
             </div>
             <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />

@@ -14,6 +14,11 @@ interface DonutProps {
   thickness?: number;
 }
 
+/** Stable SVG numbers — avoids SSR/client float drift in path `d`. */
+function svgNum(n: number): string {
+  return (Math.round(n * 1e4) / 1e4).toString();
+}
+
 export function Donut({ data, size = 160, thickness = 18 }: DonutProps) {
   const r = size / 2 - thickness / 2;
   const cx = size / 2;
@@ -29,7 +34,7 @@ export function Donut({ data, size = 160, thickness = 18 }: DonutProps) {
     const x2 = cx + r * Math.cos(a2);
     const y2 = cy + r * Math.sin(a2);
     const large = pct > 0.5 ? 1 : 0;
-    const path = `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`;
+    const path = `M${svgNum(x1)},${svgNum(y1)} A${svgNum(r)},${svgNum(r)} 0 ${large} 1 ${svgNum(x2)},${svgNum(y2)}`;
     const seg = { path, color: d.color };
     a = a2;
     return seg;
@@ -38,9 +43,9 @@ export function Donut({ data, size = 160, thickness = 18 }: DonutProps) {
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle
-        cx={cx}
-        cy={cy}
-        r={r}
+        cx={svgNum(cx)}
+        cy={svgNum(cy)}
+        r={svgNum(r)}
         fill="none"
         stroke="var(--muted)"
         strokeWidth={thickness}

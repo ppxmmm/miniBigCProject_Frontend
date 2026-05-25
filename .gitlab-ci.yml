@@ -1,0 +1,88 @@
+# Mini BigC — Frontend (Next.js 16)
+#
+# GitLab CI/CD variables (Settings → CI/CD → Variables), optional unless noted:
+#   DEV_NEXT_PUBLIC_API_BASE_URL — backend API URL baked into the client at build time
+#
+# Runner tags: set MINIBIGC_BUILD_RUNNER_TAG and MINIBIGC_DEPLOY_RUNNER_TAGS in CI variables
+# if your runners use different names than the defaults below.
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  CONTAINER_NAME: minibigc-fe
+  HOST_PORT: "3000"
+  NODE_VERSION: "22"
+  MINIBIGC_BUILD_RUNNER_TAG: docker
+  MINIBIGC_DEPLOY_RUNNER_TAG_1: docker
+
+.workflow_rules:
+  rules:
+    - if: $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_BRANCH == "DevOps"
+
+test:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  extends: .workflow_rules
+  before_script:
+    - npm ci
+  script:
+    - npm run lint
+    - npm run build
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}-npm
+    paths:
+      - node_modules/
+
+build_image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  extends: .workflow_rules
+  needs:
+    - test
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - echo "Building Mini BigC frontend image..."
+    - |
+      docker build \
+        --build-arg NEXT_PUBLIC_API_BASE_URL="${DEV_NEXT_PUBLIC_API_BASE_URL:-}" \
+        -t "$IMAGE_NAME:$IMAGE_TAG" \
+        -t "$IMAGE_NAME:latest" \
+        .
+    - docker push "$IMAGE_NAME:$IMAGE_TAG"
+    - docker push "$IMAGE_NAME:latest"
+  tags:
+    - $MINIBIGC_BUILD_RUNNER_TAG
+
+deploy_app:
+  stage: deploy
+  image: docker:24.0.5
+  extends: .workflow_rules
+  needs:
+    - build_image
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - echo "Deploying $CONTAINER_NAME..."
+    - docker pull "$IMAGE_NAME:$IMAGE_TAG"
+    - docker stop "$CONTAINER_NAME" || true
+    - docker rm "$CONTAINER_NAME" || true
+    - |
+      docker run -d \
+        --name "$CONTAINER_NAME" \
+        --restart unless-stopped \
+        -p "${HOST_PORT}:3000" \
+        -e NODE_ENV=production \
+        "$IMAGE_NAME:$IMAGE_TAG"
+    - docker image prune -f
+  tags:
+    - $MINIBIGC_DEPLOY_RUNNER_TAG_1
