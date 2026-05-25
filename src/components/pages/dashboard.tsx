@@ -44,7 +44,7 @@ import {
   MONTHLY,
   STORE,
   TOP_PRODUCTS,
-} from "@/lib/data";
+} from "@/lib/mock/data";
 import { fmtMoney, fmtNum, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

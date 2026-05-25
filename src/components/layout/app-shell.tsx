@@ -4,7 +4,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { STORE } from "@/lib/data";
+import { STORE } from "@/lib/mock/data";
 import { getT } from "@/lib/i18n";
 import type { CurrentUser, Lang, Role } from "@/types";
 
@@ -19,7 +19,18 @@ const AppShellContext = React.createContext<AppShellContextValue | null>(null);
 
 export function AppShellProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = React.useState<Lang>("th");
-  const [role] = React.useState<Role>("manager");
+  const [role, setRole] = React.useState<Role>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem("mock_user") : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const r = parsed?.role;
+        if (r === "manager" || r === "staff") return r;
+        if (r === "employee") return "staff";
+      }
+    } catch {}
+    return "manager";
+  });
 
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
@@ -38,6 +49,25 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
 
   const toggleLang = React.useCallback(() => {
     setLang((value) => (value === "th" ? "en" : "th"));
+  }, []);
+
+  React.useEffect(() => {
+    const handler = () => {
+      try {
+        const raw = localStorage.getItem("mock_user");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const r = parsed?.role;
+          if (r === "manager" || r === "staff") setRole(r);
+          else if (r === "employee") setRole("staff");
+        }
+      } catch {}
+    };
+
+    window.addEventListener("storage", handler);
+    // also run once in case login just set it
+    handler();
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   const value = React.useMemo(

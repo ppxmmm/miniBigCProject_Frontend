@@ -30,7 +30,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/page-helpers";
-import { STORE } from "@/lib/data";
+import { STORE } from "@/lib/mock/data";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";

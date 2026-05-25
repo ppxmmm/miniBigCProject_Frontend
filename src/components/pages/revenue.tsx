@@ -42,7 +42,7 @@ import {
   MONTHLY,
   PAYMENTS,
   TOP_PRODUCTS,
-} from "@/lib/data";
+} from "@/lib/mock/data";
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";

@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-helpers";
-import { DELIVERIES, STORE } from "@/lib/data";
+import { DELIVERIES, STORE } from "@/lib/mock/data";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

@@ -28,7 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader, Empty } from "@/components/page-helpers";
-import { EXPIRING, LOW_STOCK } from "@/lib/data";
+import { EXPIRING, LOW_STOCK } from "@/lib/mock/data";
 import { fmtD, fmtMoney, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

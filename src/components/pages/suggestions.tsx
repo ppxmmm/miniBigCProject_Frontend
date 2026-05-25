@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader, Restricted } from "@/components/page-helpers";
-import { EVENTS, PROMOS } from "@/lib/data";
+import { EVENTS, PROMOS } from "@/lib/mock/data";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";

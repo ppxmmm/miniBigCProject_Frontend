@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { BrandMark } from "@/components/brand-mark";
-import { STORE } from "@/lib/data";
+import { STORE } from "@/lib/mock/data";
 import { getT } from "@/lib/i18n";
 import type { CurrentUser, Lang, Role } from "@/types";
 

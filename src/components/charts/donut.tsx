@@ -19,21 +19,35 @@ export function Donut({ data, size = 160, thickness = 18 }: DonutProps) {
   const cx = size / 2;
   const cy = size / 2;
   const total = data.reduce((s, d) => s + d.value, 0);
+  const fmt = (n: number) => Number(n.toFixed(3));
 
-  let a = -Math.PI / 2;
-  const segs = data.map((d) => {
-    const pct = d.value / total;
-    const a2 = a + pct * Math.PI * 2;
-    const x1 = cx + r * Math.cos(a);
-    const y1 = cy + r * Math.sin(a);
-    const x2 = cx + r * Math.cos(a2);
-    const y2 = cy + r * Math.sin(a2);
-    const large = pct > 0.5 ? 1 : 0;
-    const path = `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`;
-    const seg = { path, color: d.color };
-    a = a2;
-    return seg;
-  });
+  const segs = data.reduce<{
+    angle: number;
+    segments: { path: string; color: string }[];
+  }>(
+    (acc, d) => {
+      const pct = total > 0 ? d.value / total : 0;
+      const startAngle = acc.angle;
+      const endAngle = startAngle + pct * Math.PI * 2;
+      const x1 = fmt(cx + r * Math.cos(startAngle));
+      const y1 = fmt(cy + r * Math.sin(startAngle));
+      const x2 = fmt(cx + r * Math.cos(endAngle));
+      const y2 = fmt(cy + r * Math.sin(endAngle));
+      const large = pct > 0.5 ? 1 : 0;
+
+      return {
+        angle: endAngle,
+        segments: [
+          ...acc.segments,
+          {
+            path: `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2}`,
+            color: d.color,
+          },
+        ],
+      };
+    },
+    { angle: -Math.PI / 2, segments: [] },
+  ).segments;
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>

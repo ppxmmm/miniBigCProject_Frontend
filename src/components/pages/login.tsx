@@ -35,7 +35,7 @@ export function LoginPage() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const submit = (e?: React.FormEvent | React.MouseEvent) => {
+  const submit = async (e?: React.FormEvent | React.MouseEvent) => {
     e?.preventDefault?.();
     if (!u || !p) {
       setError(
@@ -43,12 +43,38 @@ export function LoginPage() {
       );
       return;
     }
+
     setError(null);
     setBusy(true);
-    setTimeout(() => {
-      setBusy(false);
+
+    try {
+      const res = await fetch("/api/mock/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: u, password: p }),
+      });
+      const payload = await res.json();
+      if (!res.ok) {
+        setError(payload?.message ?? (lang === "th" ? "เข้าสู่ระบบไม่สำเร็จ" : "Sign in failed"));
+        setBusy(false);
+        return;
+      }
+
+      // store mock token for demo purposes
+      if (payload?.user?.token) {
+        try {
+          localStorage.setItem("mock_token", payload.user.token);
+          // persist whole mock user so app-shell and profile can read role/name
+          localStorage.setItem("mock_user", JSON.stringify(payload.user));
+        } catch {}
+      }
+
       router.push("/dashboard");
-    }, 600);
+    } catch (err) {
+      setError(lang === "th" ? "เกิดข้อผิดพลาด" : "An error occurred");
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
