@@ -4,8 +4,8 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
-import { STORE } from "@/lib/data";
 import { getT } from "@/lib/i18n";
+import { getUserProfile } from "@/lib/user-data";
 import type { CurrentUser, Lang, Role } from "@/types";
 
 interface AppShellContextValue {
@@ -23,15 +23,12 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
 
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
+    const profile = getUserProfile(role, lang);
     return {
-      name: role === "manager" ? STORE.manager[lang] : STORE.staff[lang],
-      initials:
-        role === "manager" ? STORE.managerInitials : STORE.staffInitials,
-      email:
-        role === "manager"
-          ? "parinya.t@minibigc.example"
-          : "nattawut.s@minibigc.example",
-      employeeId: role === "manager" ? "EMP-0421-M" : "EMP-0421-S",
+      name: profile.name,
+      initials: profile.initials,
+      email: profile.email,
+      employeeId: profile.employeeId,
       role: tx.role[role],
     };
   }, [lang, role]);

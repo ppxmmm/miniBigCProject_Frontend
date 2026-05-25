@@ -34,12 +34,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkline } from "@/components/charts/sparkline";
 import { PageHeader } from "@/components/page-helpers";
-import { fmtPct } from "@/lib/format";
+import { fmtMoney, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
-import { STORE } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchData } from "@/providers/branch-data-provider";
+import { alertBadgeCount, openDeliveryBadgeCount } from "@/lib/branch-data";
+import type { BranchData } from "@/lib/branch-data";
 import type { Lang } from "@/types";
 
 type Status = "ready" | "inProgress" | "pending";
@@ -54,13 +55,7 @@ const DASH_I18N = {
     rank: "อันดับ",
     gap: "ส่วนต่างจากเป้า",
     aiSummary: "สรุปผลโดย AI · Donjai",
-    aiNarrative: [
-      "ยอดขาย MTD ฿4.82M ต่ำกว่าเป้า 11.4% โดยหมวด ของใช้บ้าน และ อาหารแช่แข็ง เป็นกลุ่มฉุดหลัก",
-      "OTIF สัปดาห์นี้ 87.3% ลดลงจาก 92.1% สาเหตุหลักจาก OOS สินค้าหลัก 14 รายการ",
-      "ลูกค้าใหม่ลด 6% ใน 30 วัน — แนวโน้มหลุดไปคู่แข่งร้านสะดวกซื้อรอบกว่า 500 ม.",
-      "แนะนำดำเนินการ: เร่งเติม Top-30 ที่ขาด, ตั้งโปร Markdown 7 รายการใกล้หมดอายุ, ทำ Customer Win-back",
-    ],
-    aiUpdated: "อัปเดต 14:02 จากข้อมูล MTD, OTIF, Customer KPI",
+    aiUpdated: "อัปเดตจาก backend dashboard API",
     factsTitle: "Facts — แดชบอร์ดข้อมูล",
     factsSub: "ข้อมูลจริงเพื่อใช้ตัดสินใจ คลิกเพื่อดูแดชบอร์ดเต็ม",
     insightTitle: "Insight — ฝ่ายปฏิบัติการสาขาเตรียมข้อมูล",
@@ -83,13 +78,7 @@ const DASH_I18N = {
     rank: "Rank",
     gap: "Gap to target",
     aiSummary: "Executive summary by AI · Donjai",
-    aiNarrative: [
-      "MTD revenue ฿4.82M is 11.4% below target. Household and Frozen are the main drag categories.",
-      "OTIF this week 87.3%, down from 92.1% — driven by 14 OOS core SKUs.",
-      "New customer acquisition down 6% over 30 days — drifting to convenience competitors within a 500m radius.",
-      "Recommended actions: replenish out-of-stock Top-30, set 7-item markdown on near-expiry, launch customer win-back.",
-    ],
-    aiUpdated: "Updated 14:02 from MTD, OTIF and Customer KPI feeds",
+    aiUpdated: "Updated from backend dashboard API",
     factsTitle: "Facts — data dashboards",
     factsSub: "Ground truth for decisions. Click any tile to open the full dashboard.",
     insightTitle: "Insight — store operation prepares",
@@ -134,9 +123,37 @@ interface Insight {
   meta: string;
 }
 
-function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
+function percentChange(current: number, previous: number): number {
+  if (!previous) return 0;
+  return (current - previous) / previous;
+}
+
+function sum(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0);
+}
+
+function buildFacts(lang: Lang, branch: BranchData): Fact[] {
   const isTh = lang === "th";
   const d = DASH_I18N[lang];
+  const todayRevenue = sum(branch.hourly);
+  const comparisonRevenue = sum(branch.hourlyYest);
+  const dailyRevenue = sum(branch.daily);
+  const dailyComparisonRevenue = sum(branch.dailyLast);
+  const mtdRevenue = branch.monthly.at(-1) ?? dailyRevenue;
+  const categoryTotal = sum(branch.category.map((item) => item.v));
+  const topProduct = branch.topProducts[0];
+  const openDeliveries = openDeliveryBadgeCount(branch);
+  const lateDeliveries = branch.deliveries.filter((delivery) => delivery.late).length;
+  const alertCount = alertBadgeCount(branch);
+  const lowStockCount = branch.lowStock.length;
+  const expiringValue = sum(
+    branch.expiring.map((item) => item.price * item.stock),
+  );
+  const stockAvailability =
+    branch.lowStock.length + branch.topProducts.length > 0
+      ? branch.topProducts.length /
+        (branch.topProducts.length + branch.lowStock.length)
+      : 0;
 
   return [
     {
@@ -146,10 +163,10 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       ai: true,
       title: "Performance Highlight",
       sub: isTh ? "สรุป Executive โดย AI Donjai" : "Executive summary (AI Donjai)",
-      stat: "฿284k",
+      stat: fmtMoney(todayRevenue, { compact: true }),
       statLabel: isTh ? "รายได้วันนี้" : "Today",
-      delta: 0.062,
-      sparkData: hourly,
+      delta: percentChange(todayRevenue, comparisonRevenue),
+      sparkData: branch.hourly,
     },
     {
       key: "salesMtdYtd",
@@ -157,11 +174,11 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "revenue",
       title: "Sales MTD / YTD (OMNI view)",
       sub: isTh ? "ยอดขายในร้าน + ออนไลน์" : "In-store + online combined",
-      stat: "฿4.82M",
+      stat: fmtMoney(mtdRevenue, { compact: true }),
       statLabel: "MTD",
-      delta: -0.114,
+      delta: percentChange(dailyRevenue, dailyComparisonRevenue),
       deltaLabel: d.gap,
-      sparkData: monthly.slice(0, 8),
+      sparkData: branch.monthly,
     },
     {
       key: "customerKpi",
@@ -169,10 +186,10 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "revenue",
       title: isTh ? "Customer Sales & KPIs" : "Customer sales & KPIs",
       sub: isTh ? "ยอดต่อบิล · ลูกค้าใหม่ · กลับมาซื้อ" : "Basket · new · repeat customers",
-      stat: "฿686",
+      stat: fmtMoney(todayRevenue / Math.max(branch.deliveries.length, 1)),
       statLabel: isTh ? "ค่าเฉลี่ยต่อบิล" : "Avg basket",
-      delta: 0.038,
-      sparkData: [110, 118, 132, 119, 124, 128, 142, 138, 145, 134, 128, 138],
+      delta: percentChange(todayRevenue, comparisonRevenue),
+      sparkData: branch.hourly,
     },
     {
       key: "osxOtif",
@@ -180,12 +197,12 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "delivery",
       title: "OSX Sales & %OTIF",
       sub: isTh ? "ปฏิบัติการ & การจัดส่งครบถ้วน" : "Operation & Fulfillment",
-      stat: "87.3%",
-      statLabel: "OTIF",
-      delta: -0.048,
-      deltaLabel: isTh ? "เทียบสัปดาห์ก่อน" : "vs last week",
-      sparkData: [94, 93, 92, 91, 90, 89, 87],
-      danger: true,
+      stat: String(openDeliveries),
+      statLabel: isTh ? "งานที่ยังเปิด" : "Open orders",
+      delta: branch.deliveries.length ? lateDeliveries / branch.deliveries.length : 0,
+      deltaLabel: isTh ? "ส่งช้า" : "late",
+      sparkData: branch.deliveries.map((delivery) => delivery.value),
+      danger: lateDeliveries > 0,
     },
     {
       key: "inventory",
@@ -193,13 +210,12 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "alerts",
       title: "Inventory, Aging & Shrinkage",
       sub: isTh ? "อายุสินค้า · สูญเสีย · ค้างสต็อก" : "Aging · shrink · slow movers",
-      stat: "฿38.4k",
-      statLabel: isTh ? "สูญเสีย MTD" : "Shrink MTD",
-      delta: 0.124,
-      deltaLabel: isTh ? "เพิ่มจากเดือนก่อน" : "vs last month",
+      stat: fmtMoney(expiringValue, { compact: true }),
+      statLabel: isTh ? "มูลค่าใกล้หมดอายุ" : "Near-expiry value",
+      deltaLabel: isTh ? "รายการ" : "items",
       invertDelta: true,
-      sparkData: [22, 26, 28, 31, 30, 34, 38],
-      warn: true,
+      sparkData: branch.expiring.map((item) => item.stock),
+      warn: branch.expiring.length > 0,
     },
     {
       key: "lossOos",
@@ -207,13 +223,12 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "alerts",
       title: "Loss & OOS",
       sub: isTh ? "ของขาด · ของหมด · ของเสีย" : "Out of stock & shrinkage value",
-      stat: "14",
+      stat: String(alertCount),
       statLabel: isTh ? "SKU ที่หมด" : "OOS SKUs",
-      delta: 0.55,
-      deltaLabel: isTh ? "เทียบ 7 วันก่อน" : "vs prev 7d",
+      deltaLabel: isTh ? "รายการแจ้งเตือน" : "alerts",
       invertDelta: true,
-      sparkData: [4, 5, 6, 9, 11, 12, 14],
-      danger: true,
+      sparkData: branch.lowStock.map((item) => item.stock),
+      danger: alertCount > 0,
     },
     {
       key: "stockAvail",
@@ -221,12 +236,12 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "alerts",
       title: isTh ? "Stock Availability" : "Stock availability",
       sub: isTh ? "% สินค้าที่มีของบนชั้น" : "% on-shelf availability",
-      stat: "91.6%",
+      stat: fmtPct(stockAvailability),
       statLabel: "OSA",
-      delta: -0.024,
-      deltaLabel: isTh ? "ต่ำกว่าเป้า 95%" : "below 95% target",
-      sparkData: [96, 95, 94, 93, 92, 92, 91],
-      warn: true,
+      delta: -lowStockCount / Math.max(branch.topProducts.length, 1),
+      deltaLabel: isTh ? "สินค้าสต็อกต่ำ" : "low-stock items",
+      sparkData: branch.topProducts.map((item) => item.sold),
+      warn: lowStockCount > 0,
     },
     {
       key: "top30",
@@ -234,70 +249,84 @@ function buildFacts(lang: Lang, hourly: number[], monthly: number[]): Fact[] {
       goto: "revenue",
       title: isTh ? "Top 30 Items — Gain & Loss" : "Top 30 items — Gain & Loss",
       sub: isTh ? "สินค้าหลักที่ขับยอดและฉุดยอด" : "Hero SKUs driving / dragging sales",
-      stat: "+฿62k / -฿41k",
-      statLabel: isTh ? "กำไร / ขาดทุน" : "Gain / Loss",
-      sparkData: [8, 14, 12, 19, 22, 28, 31],
+      stat: topProduct ? fmtMoney(topProduct.value, { compact: true }) : fmtMoney(categoryTotal, { compact: true }),
+      statLabel: topProduct ? topProduct[lang] : isTh ? "ยอดขายหมวดหมู่" : "Category sales",
+      sparkData: branch.topProducts.map((item) => item.value),
     },
   ];
 }
 
-function buildInsights(lang: Lang): Insight[] {
+function buildInsights(lang: Lang, branch: BranchData): Insight[] {
   const isTh = lang === "th";
+  const alertTotal = alertBadgeCount(branch);
+  const deliveryTotal = branch.deliveries.length;
+  const openDeliveries = openDeliveryBadgeCount(branch);
+  const suggestionTotal = branch.promos.length + branch.events.length;
+  const topProduct = branch.topProducts[0];
 
   return [
     {
       key: "competitors",
       icon: User,
-      title: isTh ? "คู่แข่งในรัศมีบริการ" : "Competitors in catchment area",
+      title: isTh ? "บริบทสาขาจาก backend" : "Branch context from backend",
       desc: isTh
-        ? "ระบุทั้ง B2B (ร้านชำ คาเฟ่ ร้านอาหาร) และ B2C ในรัศมี 1 กม."
-        : "Identify both B2B (groceries, cafés, restaurants) and B2C within 1 km",
-      tags: ["B2B", "B2C"],
-      progress: 0.7,
-      status: "inProgress",
-      meta: isTh ? "พบ 11 ร้าน · สำรวจราคา 6/11" : "11 stores found · 6/11 price-scanned",
+        ? branch.store.address.th || "รอข้อมูลสาขาจาก backend"
+        : branch.store.address.en || "Waiting for branch data from backend",
+      tags: [branch.store.code || (isTh ? "รอข้อมูล" : "Pending")],
+      progress: branch.store.code ? 1 : 0,
+      status: branch.store.code ? "ready" : "pending",
+      meta: branch.store.name[lang] || (isTh ? "ยังไม่มีข้อมูลสาขา" : "No branch data yet"),
     },
     {
       key: "voices",
       icon: AlertTriangle,
-      title: isTh ? "เสียงลูกค้า (เหตุผลที่เลิกซื้อ)" : "Customer voices (reasons to churn)",
+      title: isTh ? "รายการแจ้งเตือนที่ต้องติดตาม" : "Alerts requiring follow-up",
       desc: isTh
-        ? "สัมภาษณ์และรวบรวมเหตุผลที่ลูกค้าเปลี่ยนไปร้านอื่น"
-        : "Interview and aggregate why customers switched to other stores",
-      tags: [isTh ? "สัมภาษณ์" : "Interviews", isTh ? "แบบสอบถาม" : "Survey"],
-      progress: 0.35,
-      status: "inProgress",
-      meta: isTh ? "เก็บแล้ว 18/50 ตัวอย่าง" : "Collected 18 of 50 samples",
+        ? `สินค้าใกล้หมดอายุ ${branch.expiring.length} รายการ · สต็อกต่ำ ${branch.lowStock.length} รายการ`
+        : `${branch.expiring.length} near-expiry items · ${branch.lowStock.length} low-stock items`,
+      tags: [isTh ? "สินค้าใกล้หมดอายุ" : "Expiry", isTh ? "สต็อกต่ำ" : "Low stock"],
+      progress: alertTotal > 0 ? 0.5 : 1,
+      status: alertTotal > 0 ? "inProgress" : "ready",
+      meta: isTh ? `${alertTotal} รายการจาก backend` : `${alertTotal} backend alerts`,
     },
     {
       key: "opportunity",
       icon: Sparkles,
-      title: isTh ? "โอกาส (สินค้า บริการ อื่น ๆ)" : "Opportunities (products, services, other)",
+      title: isTh ? "โอกาสจาก backend suggestions" : "Opportunities from backend suggestions",
       desc: isTh
-        ? "เสนอ SKU ใหม่ บริการเสริม และโอกาสจากเทรนด์ในย่าน"
-        : "Propose new SKUs, value-added services, neighbourhood trends",
-      tags: ["SKU", isTh ? "บริการ" : "Service"],
-      progress: 0.5,
-      status: "inProgress",
-      meta: isTh ? "เสนอ 6 ไอเดีย · ผ่านกลั่นกรอง 3" : "6 ideas drafted · 3 screened",
+        ? topProduct
+          ? `สินค้าเด่นตอนนี้: ${topProduct.th}`
+          : "รอข้อมูลสินค้าและข้อเสนอแนะ"
+        : topProduct
+          ? `Current top product: ${topProduct.en}`
+          : "Waiting for product and suggestion data",
+      tags: [isTh ? "โปรโมชัน" : "Promos", isTh ? "อีเวนต์" : "Events"],
+      progress: suggestionTotal > 0 ? 1 : 0,
+      status: suggestionTotal > 0 ? "ready" : "pending",
+      meta: isTh
+        ? `${branch.promos.length} โปรโมชัน · ${branch.events.length} อีเวนต์`
+        : `${branch.promos.length} promos · ${branch.events.length} events`,
     },
     {
       key: "issues",
       icon: AlertTriangle,
-      title: isTh ? "ปัญหา & ความต้องการสนับสนุน" : "Issues & requirements",
+      title: isTh ? "สถานะงานจัดส่ง" : "Delivery workload",
       desc: isTh
-        ? "ปัญหาเชิงปฏิบัติการ และทรัพยากรที่ต้องการจากสำนักงานใหญ่"
-        : "Operational pain points and resource asks from HQ",
-      tags: [isTh ? "ปฏิบัติการ" : "Ops", "HR", "IT"],
-      progress: 0.2,
-      status: "pending",
-      meta: isTh ? "เก็บ 2 หัวข้อ · รอ 4 หัวข้อ" : "2 captured · 4 pending",
+        ? `มีออเดอร์ทั้งหมด ${deliveryTotal} รายการ และยังเปิดอยู่ ${openDeliveries} รายการ`
+        : `${deliveryTotal} total orders and ${openDeliveries} still open`,
+      tags: [isTh ? "จัดส่ง" : "Delivery", isTh ? "ปฏิบัติการ" : "Ops"],
+      progress: deliveryTotal ? (deliveryTotal - openDeliveries) / deliveryTotal : 1,
+      status: openDeliveries > 0 ? "inProgress" : "ready",
+      meta: isTh ? `${openDeliveries} งานยังไม่ปิด` : `${openDeliveries} open deliveries`,
     },
   ];
 }
 
-function TopFlopBanner({ lang }: { lang: Lang }) {
+function TopFlopBanner({ lang, branch }: { lang: Lang; branch: BranchData }) {
   const d = DASH_I18N[lang];
+  const dailyTotal = sum(branch.daily);
+  const comparisonTotal = sum(branch.dailyLast);
+  const gap = percentChange(dailyTotal, comparisonTotal);
 
   return (
     <div className="mb-3.5 flex items-center gap-3.5 rounded-[10px] border border-destructive/30 bg-destructive/10 p-3.5">
@@ -310,7 +339,7 @@ function TopFlopBanner({ lang }: { lang: Lang }) {
             {d.topFlop}
           </span>
           <span className="mono text-[11px] text-muted-foreground">
-            {d.rank}: #4 / 387 · {d.gap}: -11.4% MTD
+            {branch.store.code || "API"} · {d.gap}: {fmtPct(gap, { sign: true })}
           </span>
         </div>
         <div className="mt-0.5 text-[13px]">{d.topFlopHint}</div>
@@ -323,8 +352,37 @@ function TopFlopBanner({ lang }: { lang: Lang }) {
   );
 }
 
-function AISummaryCard({ lang }: { lang: Lang }) {
+function AISummaryCard({ lang, branch }: { lang: Lang; branch: BranchData }) {
   const d = DASH_I18N[lang];
+  const todayRevenue = sum(branch.hourly);
+  const previousRevenue = sum(branch.hourlyYest);
+  const revenueChange = percentChange(todayRevenue, previousRevenue);
+  const alertTotal = alertBadgeCount(branch);
+  const openDeliveries = openDeliveryBadgeCount(branch);
+  const topCategory = branch.category[0];
+  const topProduct = branch.topProducts[0];
+  const narrative = [
+    lang === "th"
+      ? `รายได้วันนี้ ${fmtMoney(todayRevenue, { compact: true })} (${fmtPct(revenueChange, { sign: true })} เทียบข้อมูลเปรียบเทียบ)`
+      : `Today revenue is ${fmtMoney(todayRevenue, { compact: true })} (${fmtPct(revenueChange, { sign: true })} vs comparison data).`,
+    topCategory
+      ? lang === "th"
+        ? `หมวดที่ทำยอดสูงสุดคือ ${topCategory.th} มูลค่า ${fmtMoney(topCategory.v, { compact: true })}`
+        : `Top category is ${topCategory.en} at ${fmtMoney(topCategory.v, { compact: true })}.`
+      : lang === "th"
+        ? "ยังไม่มีข้อมูลหมวดหมู่จาก backend"
+        : "No backend category data is available yet.",
+    lang === "th"
+      ? `มีรายการแจ้งเตือน ${alertTotal} รายการ และงานจัดส่งที่ยังเปิดอยู่ ${openDeliveries} รายการ`
+      : `${alertTotal} alerts and ${openDeliveries} open deliveries require follow-up.`,
+    topProduct
+      ? lang === "th"
+        ? `สินค้าทำรายได้สูงสุดตอนนี้คือ ${topProduct.th}`
+        : `Current top revenue product is ${topProduct.en}.`
+      : lang === "th"
+        ? "ยังไม่มีข้อมูลสินค้าขายดีจาก backend"
+        : "No backend top-product data is available yet.",
+  ];
 
   return (
     <Card className="relative mb-3.5 gap-0 py-0">
@@ -350,12 +408,10 @@ function AISummaryCard({ lang }: { lang: Lang }) {
       </CardHeader>
       <CardContent className="px-4.5 pt-2.5 pb-4.5">
         <ol className="m-0 flex list-decimal flex-col gap-2 pl-4.5 text-[13.5px] leading-[1.55]">
-          {d.aiNarrative.map((line, index) => (
+          {narrative.map((line, index) => (
             <li key={line}>
               <span
-                className={cn(
-                  index === d.aiNarrative.length - 1 && "font-semibold text-primary",
-                )}
+                className={cn(index === narrative.length - 1 && "font-semibold text-primary")}
               >
                 {line}
               </span>
@@ -579,39 +635,52 @@ function InsightCard({ insight, lang }: { insight: Insight; lang: Lang }) {
   );
 }
 
-function SupportNeedsCard({ lang }: { lang: Lang }) {
+function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) {
   const isTh = lang === "th";
   const d = DASH_I18N[lang];
+  const topLowStock = branch.lowStock[0];
+  const topExpiring = branch.expiring[0];
+  const topPromo = branch.promos[0];
+  const openDeliveries = openDeliveryBadgeCount(branch);
   const fields = [
     {
       key: "items",
       icon: Package,
       label: isTh ? "สินค้าใด" : "Which items?",
-      value: isTh
-        ? "Top-30 OOS · 7 รายการ Markdown · กระเช้าวันแม่"
-        : "Top-30 OOS · 7 markdown SKUs · Mother's Day baskets",
+      value:
+        topLowStock?.[lang] ??
+        topExpiring?.[lang] ??
+        (isTh ? "รอข้อมูลสินค้าจาก backend" : "Waiting for backend product data"),
     },
     {
       key: "price",
       icon: Banknote,
       label: isTh ? "ราคาเท่าไหร่" : "Which price?",
-      value: isTh
-        ? "ลด 25–30% สำหรับ Markdown · ราคาปกติสำหรับ OOS"
-        : "25–30% off markdown SKUs · regular price for OOS",
+      value: topExpiring
+        ? fmtMoney(topExpiring.price)
+        : topPromo
+          ? fmtMoney(topPromo.upside, { compact: true })
+          : isTh
+            ? "รอข้อมูลราคา"
+            : "Waiting for price data",
     },
     {
       key: "qty",
       icon: TrendingUp,
       label: isTh ? "จำนวนเท่าไหร่" : "How many?",
-      value: isTh ? "เติม 1,840 ชิ้น · ตั้งกระเช้า 60 ชุด" : "Replenish 1,840 units · 60 gift baskets",
+      value: topLowStock
+        ? String(topLowStock.reorder)
+        : topExpiring
+          ? String(topExpiring.stock)
+          : "0",
     },
     {
       key: "target",
       icon: Clock,
       label: isTh ? "เป้าหมาย + ระยะเวลา" : "Target & timeline",
       value: isTh
-        ? "ปิดช่องว่าง MTD ให้เหลือ -5% ภายใน 31 พ.ค."
-        : "Close MTD gap to -5% by May 31",
+        ? `ปิดงานจัดส่งค้าง ${openDeliveries} รายการ และลด alert ${alertBadgeCount(branch)} รายการ`
+        : `Close ${openDeliveries} open deliveries and reduce ${alertBadgeCount(branch)} alerts`,
     },
   ];
 
@@ -670,11 +739,11 @@ function SupportNeedsCard({ lang }: { lang: Lang }) {
           <User className="size-3.5" />
           <span className="min-w-60 flex-1">
             {isTh
-              ? "ผู้รับผิดชอบ: SGM ทองหล่อ ซ.13 + ทีม Merchandising + ทีม Supply Chain"
-              : "Owners: SGM Thonglor 13 · Merchandising · Supply Chain"}
+              ? `ผู้รับผิดชอบ: ${branch.store.manager.th || "SGM"} + ทีม Operation`
+              : `Owners: ${branch.store.manager.en || "SGM"} · Operation`}
           </span>
           <span className="mono font-semibold text-foreground">
-            {isTh ? "ตรวจสอบ: 31 พ.ค." : "Review: May 31"}
+            {isTh ? "ข้อมูลจาก backend" : "Backend sourced"}
           </span>
         </div>
       </CardContent>
@@ -684,16 +753,16 @@ function SupportNeedsCard({ lang }: { lang: Lang }) {
 
 export function DashboardPage() {
   const router = useRouter();
-  const { lang, role } = useAppShell();
+  const { lang, role, currentUser } = useAppShell();
   const { data: branch } = useBranchData();
   const t = getT(lang);
   const d = DASH_I18N[lang];
   const isStaff = role === "staff";
-  const userName = isStaff ? STORE.staff[lang] : STORE.manager[lang];
+  const userName = currentUser.name;
   const greeting =
     lang === "th" ? "สวัสดียามบ่าย" : "Good afternoon";
-  const facts = buildFacts(lang, branch.hourly, branch.monthly);
-  const insights = buildInsights(lang);
+  const facts = buildFacts(lang, branch);
+  const insights = buildInsights(lang, branch);
 
   const openRoute = React.useCallback(
     (route: RouteKey) => {
@@ -725,8 +794,8 @@ export function DashboardPage() {
         }
       />
 
-      <TopFlopBanner lang={lang} />
-      <AISummaryCard lang={lang} />
+      <TopFlopBanner lang={lang} branch={branch} />
+      <AISummaryCard lang={lang} branch={branch} />
 
       <SectionHeader
         idx="01"
@@ -769,7 +838,7 @@ export function DashboardPage() {
       </div>
 
       <SectionHeader idx="03" title={d.supportTitle} sub={d.supportSub} />
-      <SupportNeedsCard lang={lang} />
+      <SupportNeedsCard lang={lang} branch={branch} />
 
       <div className="h-6" />
     </div>

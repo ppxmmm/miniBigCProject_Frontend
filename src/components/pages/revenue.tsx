@@ -71,19 +71,10 @@ export function RevenuePage() {
       : range === "week"
         ? DAILY
         : range === "month"
-          ? null
+          ? DAILY
           : MONTHLY;
   const compare =
     range === "day" ? HOURLY_YEST : range === "week" ? DAILY_LAST : null;
-
-  const monthly =
-    range === "month"
-      ? Array.from(
-          { length: 22 },
-          (_, i) => 180000 + Math.sin(i * 0.6) * 38000 + i * 4200 + (i % 3) * 1800,
-        )
-      : null;
-  const monthlyData = monthly ? monthly.map((v) => Math.round(v)) : null;
 
   const labels =
     range === "day"
@@ -92,13 +83,15 @@ export function RevenuePage() {
         ? t.weekdays
         : range === "year"
           ? t.months
-          : Array.from({ length: 22 }, (_, i) => String(i + 1));
+          : DAILY.map((_, i) => String(i + 1));
 
-  const activeSeries = (series || monthlyData) as number[];
+  const activeSeries = series;
   const total = activeSeries.reduce((s, v) => s + v, 0);
   const compTotal = compare ? compare.reduce((s, v) => s + v, 0) : null;
   const trxs = Math.round(total / 480);
-  const growth = compTotal ? (total - compTotal) / compTotal : 0.082;
+  const averagePerPoint = activeSeries.length ? trxs / activeSeries.length : 0;
+  const averageBasket = trxs > 0 ? total / trxs : 0;
+  const growth = compTotal ? (total - compTotal) / compTotal : 0;
 
   const paymentColor = (i: number) =>
     i === 0
@@ -151,26 +144,26 @@ export function RevenuePage() {
           icon={ShoppingBag}
           label={t.rev.trxs}
           value={fmtNum(trxs)}
-          sub={`${(trxs / activeSeries.length).toFixed(0)} ${
+          sub={`${averagePerPoint.toFixed(0)} ${
             lang === "th" ? "ต่อชั่วโมง" : "per hour"
           }`}
-          delta={0.067}
+          delta={growth}
           deltaLabel={t.common.compareYesterday}
         />
         <KPI
           icon={Package}
           label={t.rev.avg}
-          value={fmtMoney(total / trxs)}
-          delta={0.024}
+          value={fmtMoney(averageBasket)}
+          delta={growth}
           deltaLabel={t.common.compareYesterday}
         />
         <KPI
           icon={TrendingUp}
           label={t.rev.growth}
           value={fmtPct(growth, { sign: true })}
-          delta={0.012}
+          delta={growth}
           deltaLabel={lang === "th" ? "เทียบเดือนก่อน" : "vs last month"}
-          sparkData={[2.1, 3.4, 4.8, 5.2, 6.4, 7.1, 8.2]}
+          sparkData={activeSeries}
         />
       </div>
 
@@ -281,14 +274,14 @@ export function RevenuePage() {
             <CardTitle className="text-[13.5px]">{t.rev.forecast}</CardTitle>
             <CardDescription className="text-xs">
               {lang === "th"
-                ? "พยากรณ์รายวัน · ความเชื่อมั่น 84%"
-                : "Daily forecast · 84% confidence"}
+                ? "ข้อมูลรายวันจาก backend"
+                : "Daily data from backend"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <BarChart
-              data={[268000, 282000, 296000, 318000, 304000, 286000, 312000]}
-              labels={t.weekdays.slice(0, 7)}
+              data={DAILY}
+              labels={DAILY.map((_, i) => t.weekdays[i] ?? String(i + 1))}
               height={200}
               formatY={(v) => fmtMoney(v, { compact: true })}
             />

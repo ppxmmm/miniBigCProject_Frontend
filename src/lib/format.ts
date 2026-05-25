@@ -26,7 +26,7 @@ export function fmtD(d: Date, lang: Lang = "th"): string {
   return `${d.getDate()} ${m}`;
 }
 
-// Anchor "today" to May 22, 2026 so the mock data feels current relative to the demo date.
+// Anchor dashboard-relative date calculations to the current demo business date.
 export const TODAY = new Date(2026, 4, 22);
 
 export function daysBetween(d: Date): number {

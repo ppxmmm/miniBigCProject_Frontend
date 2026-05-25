@@ -35,6 +35,22 @@ export function BarChart({
     padB = 28;
   const cw = Math.max(200, w - padL - padR);
   const ch = height - padT - padB;
+  if (data.length === 0) {
+    return (
+      <div ref={ref} style={{ width: "100%" }}>
+        <svg width={w} height={height} style={{ display: "block" }}>
+          <line
+            x1={padL}
+            y1={padT + ch}
+            x2={padL + cw}
+            y2={padT + ch}
+            className="chart-grid"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   const max = Math.max(...data) * 1.1;
   const barGap = 6;
   const barW = cw / data.length - barGap;

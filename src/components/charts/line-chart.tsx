@@ -24,6 +24,7 @@ export function LineChart({
   const ref = React.useRef<HTMLDivElement>(null);
   const [w, setW] = React.useState(600);
   const [hover, setHover] = React.useState<number | null>(null);
+  const reactId = React.useId();
 
   React.useEffect(() => {
     if (!ref.current) return;
@@ -40,6 +41,22 @@ export function LineChart({
     padB = 28;
   const cw = Math.max(200, w - padL - padR);
   const ch = height - padT - padB;
+  if (data.length === 0) {
+    return (
+      <div ref={ref} style={{ width: "100%" }}>
+        <svg width={w} height={height} style={{ display: "block" }}>
+          <line
+            x1={padL}
+            y1={padT + ch}
+            x2={padL + cw}
+            y2={padT + ch}
+            className="chart-grid"
+          />
+        </svg>
+      </div>
+    );
+  }
+
   const all = [...data, ...(compare || [])];
   const max = Math.max(...all) * 1.08;
   const min = 0;
@@ -58,6 +75,7 @@ export function LineChart({
   const tArr = Array.from({ length: ticks + 1 }, (_, i) => (max / ticks) * i);
 
   const onMove: React.MouseEventHandler<SVGSVGElement> = (e) => {
+    if (data.length < 2) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - rect.left;
     let idx = Math.round((px - padL) / stepX);
@@ -66,7 +84,6 @@ export function LineChart({
   };
   const onLeave = () => setHover(null);
 
-  const reactId = React.useId();
   const gradId = `ln-${reactId.replace(/:/g, "")}`;
 
   return (

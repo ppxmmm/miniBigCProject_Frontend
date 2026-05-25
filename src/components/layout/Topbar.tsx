@@ -27,9 +27,7 @@ export function Topbar({
 }: TopbarProps) {
   const tx = getT(lang);
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-  const isDark = mounted && resolvedTheme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <header className="sticky top-0 z-30 flex h-15 items-center gap-3 border-b bg-card px-5 md:px-6">

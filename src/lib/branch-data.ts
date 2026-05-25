@@ -44,6 +44,35 @@ export interface BranchData {
   events: Suggestion[];
 }
 
+export function createEmptyBranchData(): BranchData {
+  return {
+    store: {
+      code: "",
+      name: { th: "", en: "" },
+      short: { th: "", en: "" },
+      address: { th: "", en: "" },
+      manager: { th: "", en: "" },
+      managerInitials: "",
+      staff: { th: "", en: "" },
+      staffInitials: "",
+    },
+    hours: [],
+    hourly: [],
+    hourlyYest: [],
+    daily: [],
+    dailyLast: [],
+    monthly: [],
+    category: [],
+    payments: [],
+    topProducts: [],
+    expiring: [],
+    lowStock: [],
+    deliveries: [],
+    promos: [],
+    events: [],
+  };
+}
+
 export function alertBadgeCount(data: BranchData): number {
   return data.expiring.length + data.lowStock.length;
 }

@@ -1,20 +1,3 @@
-import {
-  CATEGORY,
-  DAILY,
-  DAILY_LAST,
-  DELIVERIES,
-  EVENTS,
-  EXPIRING,
-  HOURS,
-  HOURLY,
-  HOURLY_YEST,
-  LOW_STOCK,
-  MONTHLY,
-  PAYMENTS,
-  PROMOS,
-  STORE,
-  TOP_PRODUCTS,
-} from "@/lib/data";
 import type { BranchData } from "@/lib/branch-data";
 import { mapDeliveryStatus } from "@/lib/branch-data";
 import type { ApiDashboardData } from "@/types/api";
@@ -86,12 +69,12 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       staff: { th: store.staff_name_th, en: store.staff_name_en },
       staffInitials: store.staff_initials,
     },
-    hours: hours.length ? hours : [...HOURS],
-    hourly: hourly.length ? hourly : [...HOURLY],
-    hourlyYest: hourlyYest.length ? hourlyYest : [...HOURLY_YEST],
-    daily: daily.length ? daily : [...DAILY],
-    dailyLast: dailyLast.length ? dailyLast : [...DAILY_LAST],
-    monthly: monthly.length ? monthly : [...MONTHLY],
+    hours,
+    hourly,
+    hourlyYest,
+    daily,
+    dailyLast,
+    monthly,
     category: api.category_sales.map((c) => ({
       th: c.name_th,
       en: c.name_en,
@@ -146,25 +129,5 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
     })),
     promos,
     events,
-  };
-}
-
-export function getStaticBranchData(): BranchData {
-  return {
-    store: STORE,
-    hours: [...HOURS],
-    hourly: [...HOURLY],
-    hourlyYest: [...HOURLY_YEST],
-    daily: [...DAILY],
-    dailyLast: [...DAILY_LAST],
-    monthly: [...MONTHLY],
-    category: [...CATEGORY],
-    payments: [...PAYMENTS],
-    topProducts: [...TOP_PRODUCTS],
-    expiring: [...EXPIRING],
-    lowStock: [...LOW_STOCK],
-    deliveries: [...DELIVERIES],
-    promos: [...PROMOS],
-    events: [...EVENTS],
   };
 }
