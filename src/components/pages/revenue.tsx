@@ -32,27 +32,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  CATEGORY,
-  DAILY,
-  DAILY_LAST,
-  HOURS,
-  HOURLY,
-  HOURLY_YEST,
-  MONTHLY,
-  PAYMENTS,
-  TOP_PRODUCTS,
-} from "@/lib/data";
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchData } from "@/providers/branch-data-provider";
 
 type Range = "day" | "week" | "month" | "year";
 
 export function RevenuePage() {
   const { lang, role } = useAppShell();
+  const { data: branch } = useBranchData();
   const t = getT(lang);
   const [range, setRange] = React.useState<Range>("day");
+
+  const {
+    hours: HOURS,
+    hourly: HOURLY,
+    hourlyYest: HOURLY_YEST,
+    daily: DAILY,
+    dailyLast: DAILY_LAST,
+    monthly: MONTHLY,
+    category: CATEGORY,
+    payments: PAYMENTS,
+    topProducts: TOP_PRODUCTS,
+  } = branch;
 
   if (role === "staff")
     return (

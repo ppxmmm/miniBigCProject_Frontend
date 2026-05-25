@@ -30,7 +30,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/page-helpers";
-import { STORE } from "@/lib/data";
+import { useBranchData } from "@/providers/branch-data-provider";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
@@ -39,6 +39,8 @@ type Tab = "personal" | "security";
 
 export function ProfilePage() {
   const { lang, currentUser } = useAppShell();
+  const { data: branch } = useBranchData();
+  const STORE = branch.store;
   const t = getT(lang);
   const [tab, setTab] = React.useState<Tab>("personal");
   const [pwOpen, setPwOpen] = React.useState(false);

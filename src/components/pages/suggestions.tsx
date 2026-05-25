@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { PageHeader, Restricted } from "@/components/page-helpers";
-import { EVENTS, PROMOS } from "@/lib/data";
+import { useBranchData } from "@/providers/branch-data-provider";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -40,9 +40,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export function SuggestionsPage() {
   const { lang, role } = useAppShell();
+  const { data: branch } = useBranchData();
   const t = getT(lang);
   const [tab, setTab] = React.useState<Tab>("promotions");
   const [launched, setLaunched] = React.useState<Set<string>>(new Set());
+
+  const { promos: PROMOS, events: EVENTS } = branch;
 
   if (role === "staff")
     return (

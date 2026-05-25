@@ -36,7 +36,7 @@ export function Sparkline({
   const area = `${path} L${width},${height} L0,${height} Z`;
   const stroke =
     color ||
-    (trend !== undefined && trend < 0 ? "var(--danger)" : "var(--primary)");
+    (trend !== undefined && trend < 0 ? "var(--destructive)" : "var(--primary)");
 
   return (
     <svg
