@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\boonf\\\\.claude\\\\projects\\\\C--Users-boonf-Desktop-BigC-miniBigCProject-Frontend\\\\design_extract\" -Recurse | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"C:\\\\Users\\\\boonf\\\\.claude\\\\projects\\\\C--Users-boonf-Desktop-BigC-miniBigCProject-Frontend\\\\design_extract\\\\\", \"\"\\) })",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init -d)",
+      "Bash(npx shadcn@latest add sidebar button avatar separator input card tabs badge switch label dropdown-menu -y)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
