@@ -77,6 +77,7 @@ export interface CurrentUser {
   name: string;
   initials: string;
   email: string;
+  phone: string;
   employeeId: string;
   role: string;
 }

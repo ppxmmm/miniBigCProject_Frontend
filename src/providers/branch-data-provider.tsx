@@ -10,7 +10,7 @@ interface BranchDataContextValue {
   data: BranchData;
   loading: boolean;
   error: string | null;
-  refetch: () => void;
+  refetch: () => Promise<boolean>;
 }
 
 const BranchDataContext = React.createContext<BranchDataContextValue | null>(
@@ -22,13 +22,14 @@ export function BranchDataProvider({ children }: { children: React.ReactNode }) 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
       const api = await fetchDashboard();
       setData(mapDashboardToBranchData(api));
+      return true;
     } catch (err) {
       const message =
         err instanceof ApiError
@@ -37,6 +38,7 @@ export function BranchDataProvider({ children }: { children: React.ReactNode }) 
             ? err.message
             : "Failed to load branch data";
       setError(message);
+      return false;
     } finally {
       setLoading(false);
     }

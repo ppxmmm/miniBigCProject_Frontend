@@ -36,6 +36,7 @@ import {
 import { PageHeader } from "@/components/page-helpers";
 import { Sparkline } from "@/components/charts/sparkline";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchRefresh } from "@/hooks/use-branch-refresh";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
@@ -195,7 +196,8 @@ const FALLBACK_DELIVERIES = [
 
 export function DeliveryPage() {
   const { lang, role } = useAppShell();
-  const { data: branch, refetch } = useBranchData();
+  const { data: branch } = useBranchData();
+  const { refresh, loading: refreshing } = useBranchRefresh();
   const t = getT(lang);
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<Tab>("active");
@@ -257,8 +259,14 @@ export function DeliveryPage() {
         }
         right={
           <>
-            <Button size="sm" variant="outline" onClick={refetch}>
-              <RotateCcw />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={refreshing}
+              onClick={() => void refresh()}
+            >
+              <RotateCcw className={cn(refreshing && "animate-spin")} />
               {t.common.refresh}
             </Button>
           </>

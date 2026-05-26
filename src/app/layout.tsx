@@ -38,7 +38,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AppShellProvider>{children}</AppShellProvider>
-            <Toaster richColors position="bottom-center" />
+            <Toaster richColors position="bottom-center" className="z-[100]" />
           </ThemeProvider>
         </TooltipProvider>
       </body>

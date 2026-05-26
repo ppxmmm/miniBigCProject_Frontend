@@ -68,8 +68,22 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-stretch">
-      <div className="hidden flex-1 flex-col justify-between bg-linear-to-br from-primary to-[oklch(0.45_0.14_145)] p-12 text-white md:flex">
-        <div className="flex items-center gap-2.5 text-lg font-semibold">
+      <div className="login-hero-panel relative hidden flex-1 flex-col justify-between overflow-hidden bg-linear-to-br from-primary to-[oklch(0.45_0.14_145)] p-12 text-white md:flex">
+        <div
+          aria-hidden
+          className="login-hero-blob pointer-events-none absolute -top-28 -right-20 size-80 rounded-full bg-white/10 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="login-hero-blob-slow pointer-events-none absolute -bottom-36 -left-24 size-96 rounded-full bg-white/8 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="login-hero-blob pointer-events-none absolute top-[42%] right-[18%] size-64 rounded-full bg-white/6 blur-2xl"
+          style={{ animationDuration: "11s" }}
+        />
+
+        <div className="login-hero-in login-hero-in-1 relative z-10 flex items-center gap-2.5 text-lg font-semibold">
           <BrandMark size={36} inverse />
           <div>
             <div className="tracking-tight">{tx.appName}</div>
@@ -77,30 +91,35 @@ export function LoginPage() {
           </div>
         </div>
 
-        <div>
-          <div className="mb-3.5 text-[13px] font-medium uppercase tracking-wider opacity-85">
+        <div className="relative z-10">
+          <div className="login-hero-in login-hero-in-2 mb-3.5 text-[13px] font-medium uppercase tracking-wider opacity-85">
             {lang === "th" ? "บริหารสาขาง่ายขึ้น" : "Run your branch with ease"}
           </div>
-          <h1 className="m-0 max-w-115 text-[42px] font-semibold leading-[1.05] tracking-tight">
+          <h1 className="login-hero-in login-hero-in-3 m-0 max-w-115 text-[42px] font-semibold leading-[1.05] tracking-tight">
             {t.tagline}
           </h1>
           <div className="mt-9 flex max-w-120 gap-4.5">
             <Highlight
+              className="login-hero-in login-hero-in-4"
               icon={TrendingUp}
               label={lang === "th" ? "ยอดขายเรียลไทม์" : "Real-time sales"}
             />
             <Highlight
+              className="login-hero-in login-hero-in-5"
               icon={AlertTriangle}
               label={lang === "th" ? "เตือนสต็อกอัตโนมัติ" : "Smart stock alerts"}
             />
             <Highlight
+              className="login-hero-in login-hero-in-6"
               icon={Truck}
               label={lang === "th" ? "ติดตามการส่ง" : "Delivery tracking"}
             />
           </div>
         </div>
 
-        <div className="text-xs opacity-60">{t.footer}</div>
+        <div className="login-hero-in login-hero-in-7 relative z-10 text-xs opacity-60">
+          {t.footer}
+        </div>
       </div>
 
       <div className="flex w-full shrink-0 flex-col justify-center bg-background p-6 md:w-110 md:p-12">
@@ -236,10 +255,18 @@ export function LoginPage() {
   );
 }
 
-function Highlight({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+function Highlight({
+  icon: Icon,
+  label,
+  className,
+}: {
+  icon: LucideIcon;
+  label: string;
+  className?: string;
+}) {
   return (
-    <div className="flex items-center gap-2 text-[13px]">
-      <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-white/15">
+    <div className={cn("flex items-center gap-2 text-[13px]", className)}>
+      <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm transition-transform duration-500 hover:scale-105">
         <Icon className="size-3.5" />
       </div>
       <span className="opacity-90">{label}</span>

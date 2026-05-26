@@ -31,6 +31,7 @@ import { fmtD, fmtMoney, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchRefresh } from "@/hooks/use-branch-refresh";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { useHashScroll } from "@/hooks/use-hash-scroll";
 import type { ExpiringItem, Lang, LocalizedString } from "@/types";
@@ -213,6 +214,7 @@ const SHRINK_BY_CATEGORY = [
 export function AlertsPage() {
   const { lang, role } = useAppShell();
   const { data: branch } = useBranchData();
+  const { refresh: refreshBranch, loading: syncing } = useBranchRefresh();
   const t = getT(lang);
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<Tab>("oos");
@@ -300,6 +302,13 @@ export function AlertsPage() {
     toast.success(isTh ? `เพิ่ม ${sku} เข้าแผนกู้ยอด` : `Added ${sku} to recovery plan`);
   };
 
+  const syncStock = React.useCallback(() => {
+    void refreshBranch({
+      success: isTh ? "ซิงค์สต็อกจากระบบแล้ว" : "Stock synced from backend",
+      error: isTh ? "ซิงค์สต็อกไม่สำเร็จ" : "Stock sync failed",
+    });
+  }, [isTh, refreshBranch]);
+
   return (
     <div className="fade-in" data-screen-label="Stock Alerts">
       <PageHeader
@@ -316,8 +325,8 @@ export function AlertsPage() {
               {t.common.export}
             </Button>
             {role === "manager" && (
-              <Button size="sm">
-                <RefreshCw />
+              <Button type="button" size="sm" disabled={syncing} onClick={syncStock}>
+                <RefreshCw className={cn(syncing && "animate-spin")} />
                 {isTh ? "ซิงค์สต็อก" : "Sync stock"}
               </Button>
             )}

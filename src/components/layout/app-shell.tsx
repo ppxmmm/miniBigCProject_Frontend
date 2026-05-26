@@ -12,6 +12,11 @@ import {
   writeAuthRole,
 } from "@/lib/auth-session";
 import { getT } from "@/lib/i18n";
+import {
+  getServerProfileOverrides,
+  readProfileOverrides,
+  subscribeProfile,
+} from "@/lib/profile-session";
 import { getUserProfile } from "@/lib/user-data";
 import type { CurrentUser, Lang, Role } from "@/types";
 
@@ -38,18 +43,24 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
   const role = authRole ?? "manager";
   const isAuthenticated = authRole !== null;
   const authReady = true;
+  const profileOverrides = React.useSyncExternalStore(
+    subscribeProfile,
+    () => readProfileOverrides(role),
+    getServerProfileOverrides,
+  );
 
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
     const profile = getUserProfile(role, lang);
     return {
-      name: profile.name,
-      initials: profile.initials,
-      email: profile.email,
+      name: profileOverrides.name ?? profile.name,
+      initials: profileOverrides.initials ?? profile.initials,
+      email: profileOverrides.email ?? profile.email,
+      phone: profileOverrides.phone ?? profile.phone,
       employeeId: profile.employeeId,
       role: tx.role[role],
     };
-  }, [lang, role]);
+  }, [lang, profileOverrides, role]);
 
   const toggleLang = React.useCallback(() => {
     setLang((value) => (value === "th" ? "en" : "th"));

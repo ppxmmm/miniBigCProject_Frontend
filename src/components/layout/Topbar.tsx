@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Search, Globe, Moon, Sun, Bell, Menu } from "lucide-react";
+import { Search, Globe, Moon, Sun, Menu } from "lucide-react";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -67,12 +68,7 @@ export function Topbar({
         >
           {isDark ? <Sun /> : <Moon />}
         </Button>
-        <div className="relative">
-          <Button size="icon-sm" variant="ghost">
-            <Bell />
-          </Button>
-          <span className="absolute right-1.5 top-1.5 size-1.75 rounded-full bg-destructive ring-2 ring-card" />
-        </div>
+        <NotificationBell lang={lang} />
         <Separator orientation="vertical" className="mx-1 hidden h-5 md:block" />
         <div className="hidden items-center gap-2 md:flex">
           <Avatar className="size-7">

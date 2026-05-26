@@ -39,8 +39,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";
+import { useBranchRefresh } from "@/hooks/use-branch-refresh";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { useHashScroll } from "@/hooks/use-hash-scroll";
 import type { PaymentShare } from "@/lib/branch-data";
@@ -60,7 +62,8 @@ type ProductMover = Product & {
 
 export function RevenuePage() {
   const { lang, role } = useAppShell();
-  const { data, loading, error, refetch } = useBranchData();
+  const { data, loading, error } = useBranchData();
+  const { refresh, loading: refreshing } = useBranchRefresh();
   const t = getT(lang);
   const [range, setRange] = React.useState<Range>("day");
   const [exported, setExported] = React.useState(false);
@@ -227,9 +230,12 @@ export function RevenuePage() {
               size="sm"
               variant="outline"
               className="gap-2"
-              onClick={refetch}
+              disabled={refreshing}
+              onClick={() => void refresh()}
             >
-              <RefreshCcw className="size-3.5" />
+              <RefreshCcw
+                className={cn("size-3.5", refreshing && "animate-spin")}
+              />
               {t.common.refresh}
             </Button>
           </CardContent>
