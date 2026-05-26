@@ -38,6 +38,7 @@ import { fmtMoney, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { markHashScrollIntent } from "@/lib/hash-scroll-intent";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { alertBadgeCount, openDeliveryBadgeCount } from "@/lib/branch-data";
 import type { BranchData } from "@/lib/branch-data";
@@ -770,6 +771,7 @@ export function DashboardPage() {
       const [route, sectionId] = target.split(":") as [RouteKey, string];
       const pathname = route === "delivery" ? "/deliveries" : `/${route}`;
 
+      markHashScrollIntent();
       router.push(`${pathname}#${sectionId}`, { scroll: false });
     },
     [router],

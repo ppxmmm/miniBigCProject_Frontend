@@ -27,6 +27,7 @@ import {
   openDeliveryBadgeCount,
 } from "@/lib/branch-data";
 import { getT } from "@/lib/i18n";
+import { navigateMainNav } from "@/lib/navigate";
 import { useBranchData } from "@/providers/branch-data-provider";
 import type { CurrentUser, Lang, Role } from "@/types";
 
@@ -147,8 +148,8 @@ export function Sidebar({
             disabled={!n.allow.includes(role)}
             collapsed={sbCollapsed}
             onClick={() => {
-              router.push(n.href);
               setSbOpen(false);
+              navigateMainNav(router, pathname, n.href);
             }}
           />
         ))}
@@ -165,8 +166,8 @@ export function Sidebar({
             active={pathname === n.href || pathname.startsWith(`${n.href}/`)}
             collapsed={sbCollapsed}
             onClick={() => {
-              router.push(n.href);
               setSbOpen(false);
+              navigateMainNav(router, pathname, n.href);
             }}
           />
         ))}

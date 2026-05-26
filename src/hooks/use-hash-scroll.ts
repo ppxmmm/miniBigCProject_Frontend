@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
+import { consumeHashScrollIntent } from "@/lib/hash-scroll-intent";
 
 const HIGHLIGHT_CLASS = "hash-scroll-highlight";
 const RETRY_MS = [0, 150, 350, 600, 1000, 1600];
@@ -155,6 +156,11 @@ export function useHashScroll(active = true) {
 
       const id = decodeURIComponent(hash.replace(/^#/, ""));
       if (!id || !document.getElementById(id)) return;
+
+      if (!consumeHashScrollIntent()) {
+        window.history.replaceState(null, "", pathname);
+        return;
+      }
 
       scrollKeyRef.current = scrollKey;
       void scrollToHashSection(hash).catch(() => {
