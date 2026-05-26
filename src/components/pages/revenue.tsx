@@ -446,7 +446,7 @@ export function RevenuePage() {
                 <div className="space-y-3">
                   {branch.payments.map((payment, index) => (
                     <div
-                      key={`${branch.id}-${payment.en}-${index}`}
+                      key={paymentListKey(payment, index)}
                       className="grid grid-cols-[12px_1fr_auto] items-center gap-3 text-[13px]"
                     >
                       <span
