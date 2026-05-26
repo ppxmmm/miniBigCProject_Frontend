@@ -292,7 +292,7 @@ function CrisisContextStrip({
   const isTh = lang === "th";
 
   return (
-    <Card className="mb-3.5 overflow-hidden border-primary/25 bg-primary-50/65 shadow-[var(--sh-2)]">
+    <Card className="mb-3.5 overflow-hidden border-primary/25 bg-primary-50/65 shadow-(--sh-2)">
       <CardContent className="flex flex-wrap items-center gap-4 border-l-4 border-primary p-4">
         <div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Sparkles className="size-5" />
@@ -398,12 +398,12 @@ export function SuggestionsPage() {
             <Progress
               value={gapClose * 100}
               className={cn(
-                "mt-2.5 [&_[data-slot=progress-track]]:h-2.5",
+                "mt-2.5 **:data-[slot=progress-track]:h-2.5",
                 gapClose >= 0.5
-                  ? "[&_[data-slot=progress-indicator]]:bg-primary"
+                  ? "**:data-[slot=progress-indicator]:bg-primary"
                   : gapClose > 0
-                    ? "[&_[data-slot=progress-indicator]]:bg-warn"
-                    : "[&_[data-slot=progress-indicator]]:bg-muted-foreground",
+                    ? "**:data-[slot=progress-indicator]:bg-warn"
+                    : "**:data-[slot=progress-indicator]:bg-muted-foreground",
               )}
             />
             <div className="mt-1.5 text-xs text-muted-foreground">
@@ -506,13 +506,13 @@ function RecoveryActionCard({
     >
       <CardContent className="flex h-full flex-col gap-3 p-4">
         <div className="flex items-start gap-3">
-          <div className="flex size-[38px] shrink-0 items-center justify-center rounded-[9px] bg-primary-50 text-primary">
+          <div className="flex size-9.5 shrink-0 items-center justify-center rounded-[9px] bg-primary-50 text-primary">
             <Icon className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
             <div className="mb-1 flex flex-wrap items-center gap-1.5">
               <PriorityPill level={action.priority} lang={lang} />
-              <span className="text-[10.5px] font-semibold uppercase tracking-[0.05em] text-muted-foreground">
+              <span className="text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {SOURCE_LABEL[action.source][lang]}
               </span>
             </div>
@@ -546,10 +546,10 @@ function RecoveryActionCard({
                 className={cn(
                   "flex-1",
                   action.confidence <= 0.65 &&
-                    "[&_[data-slot=progress-indicator]]:bg-destructive",
+                    "**:data-[slot=progress-indicator]:bg-destructive",
                   action.confidence > 0.65 &&
                     action.confidence <= 0.8 &&
-                    "[&_[data-slot=progress-indicator]]:bg-warn",
+                    "**:data-[slot=progress-indicator]:bg-warn",
                 )}
               />
               <span className="num min-w-8 text-xs font-semibold">

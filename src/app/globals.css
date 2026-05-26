@@ -240,6 +240,29 @@
     }
   }
 
+  /* Chat AI — bouncing dots loading indicator */
+  .chat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted-foreground);
+    opacity: 0.35;
+    animation: chat-bounce 1s infinite ease-in-out;
+    display: inline-block;
+  }
+  @keyframes chat-bounce {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.35;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
   /* fade-in for page transitions */
   .fade-in {
     animation: fadeIn 0.25s ease;

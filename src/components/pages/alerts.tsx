@@ -365,7 +365,7 @@ export function AlertsPage() {
         <Card id="inventory-aging-shrinkage" className="scroll-mt-20 rounded-[10px] shadow-none">
           <CardContent className="p-4.5">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center rounded-[10px] bg-warn-50 text-[color:oklch(0.45_0.13_70)]">
+              <div className="flex size-11 items-center justify-center rounded-[10px] bg-warn-50 text-[oklch(0.45_0.13_70)]">
                 <Package className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
@@ -393,7 +393,7 @@ export function AlertsPage() {
             </div>
             <div className="mt-2 text-[11.5px] text-muted-foreground">
               {isTh ? "เพิ่มขึ้น" : "Up"}{" "}
-              <span className="num font-semibold text-[color:oklch(0.45_0.13_70)]">
+              <span className="num font-semibold text-[oklch(0.45_0.13_70)]">
                 +{(((shrinkMtd - shrinkLast) / shrinkLast) * 100).toFixed(1)}%
               </span>{" "}
               {isTh ? "เทียบเดือนก่อน" : "vs last month"}
@@ -622,7 +622,7 @@ function ExpiringTable({
                   className={cn(
                     "num font-semibold",
                     isUrgent && "text-destructive",
-                    !isUrgent && item.daysLeft <= 3 && "text-[color:oklch(0.45_0.13_70)]",
+                    !isUrgent && item.daysLeft <= 3 && "text-[oklch(0.45_0.13_70)]",
                   )}
                 >
                   {item.daysLeft === 0 ? (isTh ? "วันนี้" : "today") : `${item.daysLeft} ${t.alert.days}`}
@@ -694,7 +694,7 @@ function SlowTable({
                 <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">{item.sku}</div>
               </td>
               <td>
-                <Badge variant="outline" className="gap-1 text-[color:oklch(0.45_0.13_70)]">
+                <Badge variant="outline" className="gap-1 text-[oklch(0.45_0.13_70)]">
                   <Clock className="size-3" />
                   {item.days} {t.alert.days}
                 </Badge>
@@ -732,7 +732,7 @@ function SlowTable({
 function ResponsiveTable({ children }: { children: React.ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[780px] text-left text-[12.5px]">
+      <table className="w-full min-w-195 text-left text-[12.5px]">
         {children}
       </table>
     </div>
@@ -882,7 +882,7 @@ function PriorityPill({ lang, level }: { lang: Lang; level: Priority }) {
   }[level];
   const className = {
     p1: "border-destructive/25 bg-destructive/10 text-destructive",
-    p2: "border-[color:oklch(0.72_0.16_75_/_0.28)] bg-warn-50 text-[color:oklch(0.45_0.13_70)]",
+    p2: "border-[oklch(0.72_0.16_75/0.28)] bg-warn-50 text-[oklch(0.45_0.13_70)]",
     p3: "border-primary/25 bg-primary-50 text-primary",
   }[level];
 

@@ -38,6 +38,7 @@ import { fmtMoney, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { getTimeGreeting } from "@/lib/greeting";
 import { markHashScrollIntent } from "@/lib/hash-scroll-intent";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { alertBadgeCount, openDeliveryBadgeCount } from "@/lib/branch-data";
@@ -388,8 +389,8 @@ function AISummaryCard({ lang, branch }: { lang: Lang; branch: BranchData }) {
 
   return (
     <Card className="relative mb-3.5 gap-0 py-0">
-      <div className="absolute inset-x-0 top-0 h-[3px] bg-linear-to-r from-primary to-[oklch(0.66_0.16_285)]" />
-      <CardHeader className="!grid-cols-1 px-4.5 pt-4 sm:!grid-cols-[1fr_auto]">
+      <div className="absolute inset-x-0 top-0 h-0.75 bg-linear-to-r from-primary to-[oklch(0.66_0.16_285)]" />
+      <CardHeader className="grid-cols-1! px-4.5 pt-4 sm:grid-cols-[1fr_auto]!">
         <CardTitle className="flex items-center gap-2 text-[13.5px]">
           <span className="inline-flex items-center gap-1 rounded-[5px] bg-linear-to-br from-primary to-[oklch(0.66_0.16_285)] px-1.5 py-0.5 text-[10.5px] font-bold tracking-[0.06em] text-white">
             <Sparkles className="size-3" />
@@ -398,7 +399,7 @@ function AISummaryCard({ lang, branch }: { lang: Lang; branch: BranchData }) {
           {d.aiSummary}
         </CardTitle>
         <CardDescription className="text-xs">{d.aiUpdated}</CardDescription>
-        <CardAction className="!col-start-1 !row-start-2 !row-span-1 mt-1 flex justify-self-start gap-1.5 sm:!col-start-2 sm:!row-start-1 sm:mt-0 sm:justify-self-end">
+        <CardAction className="col-start-1! row-start-2! row-span-1! mt-1 flex justify-self-start gap-1.5 sm:col-start-2! sm:row-start-1! sm:mt-0 sm:justify-self-end">
           <Button size="icon-sm" variant="ghost" aria-label={lang === "th" ? "รีเฟรช" : "Refresh"}>
             <RefreshCcw />
           </Button>
@@ -487,7 +488,7 @@ function FactTile({
       onClick={() => onOpen(fact.goto)}
       className="relative flex min-h-40 flex-col gap-2.5 overflow-hidden rounded-[10px] border border-border bg-card p-4 text-left shadow-[0_1px_2px_rgba(20,25,18,0.05)] transition hover:border-foreground/20 hover:shadow-[0_4px_14px_-2px_rgba(20,25,18,0.08),0_1px_3px_rgba(20,25,18,0.04)] focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
     >
-      <div className={cn("absolute top-3 bottom-3 left-0 w-[3px] rounded-r-[3px]", accentClass)} />
+      <div className={cn("absolute top-3 bottom-3 left-0 w-0.75 rounded-r-[3px]", accentClass)} />
       <div className="flex items-start gap-2.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
           <Icon className="size-4" />
@@ -498,7 +499,7 @@ function FactTile({
               {fact.title}
             </div>
             {fact.ai && (
-              <span className="rounded-[4px] bg-linear-to-br from-primary to-[oklch(0.66_0.16_285)] px-1.5 py-px text-[9.5px] font-bold tracking-[0.05em] text-white">
+              <span className="rounded-lg bg-linear-to-br from-primary to-[oklch(0.66_0.16_285)] px-1.5 py-px text-[9.5px] font-bold tracking-wider text-white">
                 AI
               </span>
             )}
@@ -727,7 +728,7 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
                   <Icon className="size-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11.5px] font-semibold tracking-[0.05em] text-muted-foreground uppercase">
+                  <div className="text-[11.5px] font-semibold tracking-wider text-muted-foreground uppercase">
                     {field.label}
                   </div>
                   <div className="mt-1 text-[13.5px] leading-[1.4] font-medium">{field.value}</div>
@@ -761,8 +762,7 @@ export function DashboardPage() {
   const d = DASH_I18N[lang];
   const isStaff = role === "staff";
   const userName = currentUser.name;
-  const greeting =
-    lang === "th" ? "สวัสดียามบ่าย" : "Good afternoon";
+  const greeting = getTimeGreeting(lang);
   const facts = buildFacts(lang, branch);
   const insights = buildInsights(lang, branch);
 

@@ -7,6 +7,8 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { AIChatPanel } from "@/components/ai-chat-panel";
 import { Button } from "@/components/ui/button";
+import { Topbar } from "@/components/layout/Topbar";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -77,16 +79,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
       loginAs,
       logout,
     }),
-    [
-      lang,
-      role,
-      currentUser,
-      authReady,
-      isAuthenticated,
-      toggleLang,
-      loginAs,
-      logout,
-    ],
+    [lang, role, currentUser, authReady, isAuthenticated, toggleLang, loginAs, logout],
   );
 
   return (
@@ -187,6 +180,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      <ChatWidget />
     </div>
   );
 }
