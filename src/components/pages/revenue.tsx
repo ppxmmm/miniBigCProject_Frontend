@@ -60,6 +60,8 @@ type ProductMover = Product & {
   rate: number;
 };
 
+const TOP_MOVERS_PAGE_SIZE = 10;
+
 export function RevenuePage() {
   const { lang, role } = useAppShell();
   const { data, loading, error } = useBranchData();
@@ -480,8 +482,8 @@ export function RevenuePage() {
               }
               sub={
                 lang === "th"
-                  ? "สินค้าหลัก 5 อันดับ ทั้งดีและไม่ดี เทียบกับ MTD เดือนก่อน"
-                  : "Top 5 movers on each side, vs last month MTD"
+                  ? "แสดงสินค้าทั้งหมด แบ่งหน้า 10 รายการต่อหน้า เทียบกับ MTD เดือนก่อน"
+                  : "All movers, paginated 10 per page, vs last month MTD"
               }
             />
 
@@ -604,14 +606,10 @@ function getRevenueSnapshot(
   }
 
   if (range === "year") {
-    const previous = branch.monthly.slice(0, -1);
-    const latest = branch.monthly.slice(1);
     return {
-      actual: latest.length ? latest : branch.monthly,
-      comparison: previous.length ? previous : [],
-      labels: branch.monthly
-        .map((_, index) => String(index + 1))
-        .slice(latest.length ? 1 : 0),
+      actual: branch.monthly,
+      comparison: [],
+      labels: branch.monthly.map((_, index) => String(index + 1)),
       label: { th: "YTD", en: "YTD" },
       description: {
         th: "รายเดือนจาก backend",
@@ -965,6 +963,11 @@ function TopMoverTable({
 }) {
   const total = products.reduce((sum, product) => sum + product.lift, 0);
   const positive = tone === "primary";
+  const [page, setPage] = React.useState(0);
+  const pageCount = Math.max(1, Math.ceil(products.length / TOP_MOVERS_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const start = safePage * TOP_MOVERS_PAGE_SIZE;
+  const pageProducts = products.slice(start, start + TOP_MOVERS_PAGE_SIZE);
 
   return (
     <Card className="gap-0 overflow-hidden rounded-[10px] border border-border bg-card py-0 shadow-none">
@@ -975,6 +978,9 @@ function TopMoverTable({
           <AlertTriangle className="size-4 text-destructive" />
         )}
         <span className="text-[13.5px] font-semibold">{title}</span>
+        <span className="text-[11.5px] text-muted-foreground">
+          {products.length} {lang === "th" ? "รายการ" : "items"}
+        </span>
         <Badge
           variant={positive ? "default" : "destructive"}
           className="num ml-auto"
@@ -996,9 +1002,9 @@ function TopMoverTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {products.length > 0 ? (
-            products.map((product, index) => (
-              <TableRow key={productListKey(product, index)}>
+          {pageProducts.length > 0 ? (
+            pageProducts.map((product, index) => (
+              <TableRow key={productListKey(product, start + index)}>
                 <TableCell>
                   <div className="text-[13px] font-medium">{product[lang]}</div>
                   <div className="mono text-[11.5px] text-muted-foreground">
@@ -1035,6 +1041,39 @@ function TopMoverTable({
           )}
         </TableBody>
       </Table>
+      {products.length > TOP_MOVERS_PAGE_SIZE && (
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4.5 py-3">
+          <div className="text-[12px] text-muted-foreground">
+            {lang === "th"
+              ? `หน้า ${safePage + 1} / ${pageCount} · รายการ ${start + 1}-${Math.min(
+                  start + TOP_MOVERS_PAGE_SIZE,
+                  products.length,
+                )}`
+              : `Page ${safePage + 1} of ${pageCount} · items ${start + 1}-${Math.min(
+                  start + TOP_MOVERS_PAGE_SIZE,
+                  products.length,
+                )}`}
+          </div>
+          <div className="flex gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={safePage === 0}
+              onClick={() => setPage((current) => Math.max(0, current - 1))}
+            >
+              {lang === "th" ? "ก่อนหน้า" : "Previous"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={safePage >= pageCount - 1}
+              onClick={() => setPage((current) => Math.min(pageCount - 1, current + 1))}
+            >
+              {lang === "th" ? "ถัดไป" : "Next"}
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

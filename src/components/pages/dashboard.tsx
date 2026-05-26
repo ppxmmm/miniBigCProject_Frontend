@@ -53,7 +53,8 @@ type DashboardTarget = `${RouteKey}:${string}`;
 const DASH_I18N = {
   th: {
     crisisTitle: "การเตรียมการบริหารวิกฤตธุรกิจ",
-    crisisSub: "กรอบการดำเนินงานสำหรับ SGM · เริ่มจากสาขา Top Flop ที่กระทบยอดขายสูงสุด",
+    crisisSub:
+      "กรอบการดำเนินงานสำหรับ SGM · เริ่มจากสาขา Top Flop ที่กระทบยอดขายสูงสุด",
     topFlop: "สาขา TOP FLOP",
     topFlopHint: "สาขานี้อยู่ในกลุ่มกระทบยอดขายสูงสุด — ให้ความสำคัญสูงสุด",
     rank: "อันดับ",
@@ -76,7 +77,8 @@ const DASH_I18N = {
   },
   en: {
     crisisTitle: "Business Crisis Management Preparation",
-    crisisSub: "Operating framework for SGM · Starting from Top Flop stores with highest impact",
+    crisisSub:
+      "Operating framework for SGM · Starting from Top Flop stores with highest impact",
     topFlop: "TOP FLOP STORE",
     topFlopHint: "This store is in the highest-impact group — top priority",
     rank: "Rank",
@@ -84,11 +86,13 @@ const DASH_I18N = {
     aiSummary: "Executive summary by AI · Donjai",
     aiUpdated: "Updated from backend dashboard API",
     factsTitle: "Facts — data dashboards",
-    factsSub: "Ground truth for decisions. Click any tile to open the full dashboard.",
+    factsSub:
+      "Ground truth for decisions. Click any tile to open the full dashboard.",
     insightTitle: "Insight — store operation prepares",
     insightSub: "Field intelligence the branch team must capture and report",
     supportTitle: "Support Needs & Expected Outcome",
-    supportSub: "Solid and measurable outcomes · Operation & all commit together",
+    supportSub:
+      "Solid and measurable outcomes · Operation & all commit together",
     open: "Open dashboard",
     ready: "Ready",
     inProgress: "In progress",
@@ -143,11 +147,14 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
   const comparisonRevenue = sum(branch.hourlyYest);
   const dailyRevenue = sum(branch.daily);
   const dailyComparisonRevenue = sum(branch.dailyLast);
-  const mtdRevenue = branch.monthly.at(-1) ?? dailyRevenue;
+  const mtdRevenue = dailyRevenue || (branch.monthly.at(-1) ?? 0);
+  const mtdSparkData = branch.daily.length > 0 ? branch.daily : branch.monthly;
   const categoryTotal = sum(branch.category.map((item) => item.v));
   const topProduct = branch.topProducts[0];
   const openDeliveries = openDeliveryBadgeCount(branch);
-  const lateDeliveries = branch.deliveries.filter((delivery) => delivery.late).length;
+  const lateDeliveries = branch.deliveries.filter(
+    (delivery) => delivery.late,
+  ).length;
   const alertCount = alertBadgeCount(branch);
   const lowStockCount = branch.lowStock.length;
   const expiringValue = sum(
@@ -166,7 +173,9 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       goto: "revenue:performance-highlight",
       ai: true,
       title: "Performance Highlight",
-      sub: isTh ? "สรุป Executive โดย AI Donjai" : "Executive summary (AI Donjai)",
+      sub: isTh
+        ? "สรุป Executive โดย AI Donjai"
+        : "Executive summary (AI Donjai)",
       stat: fmtMoney(todayRevenue, { compact: true }),
       statLabel: isTh ? "รายได้วันนี้" : "Today",
       delta: percentChange(todayRevenue, comparisonRevenue),
@@ -182,14 +191,16 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       statLabel: "MTD",
       delta: percentChange(dailyRevenue, dailyComparisonRevenue),
       deltaLabel: d.gap,
-      sparkData: branch.monthly,
+      sparkData: mtdSparkData,
     },
     {
       key: "customerKpi",
       icon: User,
       goto: "revenue:customer-sales-kpis",
       title: isTh ? "Customer Sales & KPIs" : "Customer sales & KPIs",
-      sub: isTh ? "ยอดต่อบิล · ลูกค้าใหม่ · กลับมาซื้อ" : "Basket · new · repeat customers",
+      sub: isTh
+        ? "ยอดต่อบิล · ลูกค้าใหม่ · กลับมาซื้อ"
+        : "Basket · new · repeat customers",
       stat: fmtMoney(todayRevenue / Math.max(branch.deliveries.length, 1)),
       statLabel: isTh ? "ค่าเฉลี่ยต่อบิล" : "Avg basket",
       delta: percentChange(todayRevenue, comparisonRevenue),
@@ -203,7 +214,9 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       sub: isTh ? "ปฏิบัติการ & การจัดส่งครบถ้วน" : "Operation & Fulfillment",
       stat: String(openDeliveries),
       statLabel: isTh ? "งานที่ยังเปิด" : "Open orders",
-      delta: branch.deliveries.length ? lateDeliveries / branch.deliveries.length : 0,
+      delta: branch.deliveries.length
+        ? lateDeliveries / branch.deliveries.length
+        : 0,
       deltaLabel: isTh ? "ส่งช้า" : "late",
       sparkData: branch.deliveries.map((delivery) => delivery.value),
       danger: lateDeliveries > 0,
@@ -213,7 +226,9 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       icon: Package,
       goto: "alerts:inventory-aging-shrinkage",
       title: "Inventory, Aging & Shrinkage",
-      sub: isTh ? "อายุสินค้า · สูญเสีย · ค้างสต็อก" : "Aging · shrink · slow movers",
+      sub: isTh
+        ? "อายุสินค้า · สูญเสีย · ค้างสต็อก"
+        : "Aging · shrink · slow movers",
       stat: fmtMoney(expiringValue, { compact: true }),
       statLabel: isTh ? "มูลค่าใกล้หมดอายุ" : "Near-expiry value",
       deltaLabel: isTh ? "รายการ" : "items",
@@ -226,7 +241,9 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       icon: AlertTriangle,
       goto: "alerts:loss-oos",
       title: "Loss & OOS",
-      sub: isTh ? "ของขาด · ของหมด · ของเสีย" : "Out of stock & shrinkage value",
+      sub: isTh
+        ? "ของขาด · ของหมด · ของเสีย"
+        : "Out of stock & shrinkage value",
       stat: String(alertCount),
       statLabel: isTh ? "SKU ที่หมด" : "OOS SKUs",
       deltaLabel: isTh ? "รายการแจ้งเตือน" : "alerts",
@@ -252,9 +269,17 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
       icon: Flame,
       goto: "revenue:top-30-gain-loss",
       title: isTh ? "Top 30 Items — Gain & Loss" : "Top 30 items — Gain & Loss",
-      sub: isTh ? "สินค้าหลักที่ขับยอดและฉุดยอด" : "Hero SKUs driving / dragging sales",
-      stat: topProduct ? fmtMoney(topProduct.value, { compact: true }) : fmtMoney(categoryTotal, { compact: true }),
-      statLabel: topProduct ? topProduct[lang] : isTh ? "ยอดขายหมวดหมู่" : "Category sales",
+      sub: isTh
+        ? "สินค้าหลักที่ขับยอดและฉุดยอด"
+        : "Hero SKUs driving / dragging sales",
+      stat: topProduct
+        ? fmtMoney(topProduct.value, { compact: true })
+        : fmtMoney(categoryTotal, { compact: true }),
+      statLabel: topProduct
+        ? topProduct[lang]
+        : isTh
+          ? "ยอดขายหมวดหมู่"
+          : "Category sales",
       sparkData: branch.topProducts.map((item) => item.value),
     },
   ];
@@ -279,24 +304,35 @@ function buildInsights(lang: Lang, branch: BranchData): Insight[] {
       tags: [branch.store.code || (isTh ? "รอข้อมูล" : "Pending")],
       progress: branch.store.code ? 1 : 0,
       status: branch.store.code ? "ready" : "pending",
-      meta: branch.store.name[lang] || (isTh ? "ยังไม่มีข้อมูลสาขา" : "No branch data yet"),
+      meta:
+        branch.store.name[lang] ||
+        (isTh ? "ยังไม่มีข้อมูลสาขา" : "No branch data yet"),
     },
     {
       key: "voices",
       icon: AlertTriangle,
-      title: isTh ? "รายการแจ้งเตือนที่ต้องติดตาม" : "Alerts requiring follow-up",
+      title: isTh
+        ? "รายการแจ้งเตือนที่ต้องติดตาม"
+        : "Alerts requiring follow-up",
       desc: isTh
         ? `สินค้าใกล้หมดอายุ ${branch.expiring.length} รายการ · สต็อกต่ำ ${branch.lowStock.length} รายการ`
         : `${branch.expiring.length} near-expiry items · ${branch.lowStock.length} low-stock items`,
-      tags: [isTh ? "สินค้าใกล้หมดอายุ" : "Expiry", isTh ? "สต็อกต่ำ" : "Low stock"],
+      tags: [
+        isTh ? "สินค้าใกล้หมดอายุ" : "Expiry",
+        isTh ? "สต็อกต่ำ" : "Low stock",
+      ],
       progress: alertTotal > 0 ? 0.5 : 1,
       status: alertTotal > 0 ? "inProgress" : "ready",
-      meta: isTh ? `${alertTotal} รายการจาก backend` : `${alertTotal} backend alerts`,
+      meta: isTh
+        ? `${alertTotal} รายการจาก backend`
+        : `${alertTotal} backend alerts`,
     },
     {
       key: "opportunity",
       icon: Sparkles,
-      title: isTh ? "โอกาสจาก backend suggestions" : "Opportunities from backend suggestions",
+      title: isTh
+        ? "โอกาสจาก backend suggestions"
+        : "Opportunities from backend suggestions",
       desc: isTh
         ? topProduct
           ? `สินค้าเด่นตอนนี้: ${topProduct.th}`
@@ -319,9 +355,13 @@ function buildInsights(lang: Lang, branch: BranchData): Insight[] {
         ? `มีออเดอร์ทั้งหมด ${deliveryTotal} รายการ และยังเปิดอยู่ ${openDeliveries} รายการ`
         : `${deliveryTotal} total orders and ${openDeliveries} still open`,
       tags: [isTh ? "จัดส่ง" : "Delivery", isTh ? "ปฏิบัติการ" : "Ops"],
-      progress: deliveryTotal ? (deliveryTotal - openDeliveries) / deliveryTotal : 1,
+      progress: deliveryTotal
+        ? (deliveryTotal - openDeliveries) / deliveryTotal
+        : 1,
       status: openDeliveries > 0 ? "inProgress" : "ready",
-      meta: isTh ? `${openDeliveries} งานยังไม่ปิด` : `${openDeliveries} open deliveries`,
+      meta: isTh
+        ? `${openDeliveries} งานยังไม่ปิด`
+        : `${openDeliveries} open deliveries`,
     },
   ];
 }
@@ -343,7 +383,8 @@ function TopFlopBanner({ lang, branch }: { lang: Lang; branch: BranchData }) {
             {d.topFlop}
           </span>
           <span className="mono text-[11px] text-muted-foreground">
-            {branch.store.code || "API"} · {d.gap}: {fmtPct(gap, { sign: true })}
+            {branch.store.code || "API"} · {d.gap}:{" "}
+            {fmtPct(gap, { sign: true })}
           </span>
         </div>
         <div className="mt-0.5 text-[13px]">{d.topFlopHint}</div>
@@ -440,7 +481,10 @@ function AISummaryCard({
           {narrative.map((line, index) => (
             <li key={line}>
               <span
-                className={cn(index === narrative.length - 1 && "font-semibold text-primary")}
+                className={cn(
+                  index === narrative.length - 1 &&
+                    "font-semibold text-primary",
+                )}
               >
                 {line}
               </span>
@@ -470,8 +514,14 @@ function SectionHeader({
           {idx}
         </span>
         <div>
-          <div className="text-[15.5px] font-semibold tracking-[-0.01em]">{title}</div>
-          {sub && <div className="mt-0.5 text-[12.5px] text-muted-foreground">{sub}</div>}
+          <div className="text-[15.5px] font-semibold tracking-[-0.01em]">
+            {title}
+          </div>
+          {sub && (
+            <div className="mt-0.5 text-[12.5px] text-muted-foreground">
+              {sub}
+            </div>
+          )}
         </div>
       </div>
       {right}
@@ -496,7 +546,9 @@ function FactTile({
   const showRed = fact.invertDelta ? positive : !positive;
   const restricted =
     isStaff &&
-    (fact.key === "salesMtdYtd" || fact.key === "top30" || fact.key === "perfHighlight");
+    (fact.key === "salesMtdYtd" ||
+      fact.key === "top30" ||
+      fact.key === "perfHighlight");
   const accentClass = fact.danger
     ? "bg-destructive"
     : fact.warn
@@ -514,7 +566,12 @@ function FactTile({
       onClick={() => onOpen(fact.goto)}
       className="relative flex min-h-40 flex-col gap-2.5 overflow-hidden rounded-[10px] border border-border bg-card p-4 text-left shadow-[0_1px_2px_rgba(20,25,18,0.05)] transition hover:border-foreground/20 hover:shadow-[0_4px_14px_-2px_rgba(20,25,18,0.08),0_1px_3px_rgba(20,25,18,0.04)] focus-visible:ring-3 focus-visible:ring-ring/35 focus-visible:outline-none"
     >
-      <div className={cn("absolute top-3 bottom-3 left-0 w-0.75 rounded-r-[3px]", accentClass)} />
+      <div
+        className={cn(
+          "absolute top-3 bottom-3 left-0 w-0.75 rounded-r-[3px]",
+          accentClass,
+        )}
+      />
       <div className="flex items-start gap-2.5">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
           <Icon className="size-4" />
@@ -530,7 +587,9 @@ function FactTile({
               </span>
             )}
           </div>
-          <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">{fact.sub}</div>
+          <div className="mt-0.5 truncate text-[11.5px] text-muted-foreground">
+            {fact.sub}
+          </div>
         </div>
       </div>
 
@@ -544,7 +603,9 @@ function FactTile({
           >
             {restricted ? "•••••" : fact.stat}
           </div>
-          <div className="mt-px text-[11px] text-muted-foreground">{fact.statLabel}</div>
+          <div className="mt-px text-[11px] text-muted-foreground">
+            {fact.statLabel}
+          </div>
         </div>
         {!restricted && (
           <Sparkline
@@ -560,18 +621,30 @@ function FactTile({
         <div className="flex items-center gap-1.5 text-[11.5px]">
           <Badge
             variant={showRed ? "destructive" : "default"}
-            className={cn(!showRed && "bg-primary-50 text-primary hover:bg-primary-50")}
+            className={cn(
+              !showRed && "bg-primary-50 text-primary hover:bg-primary-50",
+            )}
           >
-            {fact.delta >= 0 ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />}
+            {fact.delta >= 0 ? (
+              <ArrowUp className="size-3" />
+            ) : (
+              <ArrowDown className="size-3" />
+            )}
             {fmtPct(Math.abs(fact.delta), { dp: 1 })}
           </Badge>
           <span className="truncate text-muted-foreground">
-            {fact.deltaLabel || (lang === "th" ? "เทียบกับเมื่อวาน" : "vs yesterday")}
+            {fact.deltaLabel ||
+              (lang === "th" ? "เทียบกับเมื่อวาน" : "vs yesterday")}
           </span>
         </div>
       )}
 
-      <div className={cn("mt-auto flex items-center justify-between border-t border-border pt-2.5 text-xs font-medium", accentText)}>
+      <div
+        className={cn(
+          "mt-auto flex items-center justify-between border-t border-border pt-2.5 text-xs font-medium",
+          accentText,
+        )}
+      >
         <span>{d.open}</span>
         <ChevronRight className="size-3.5" />
       </div>
@@ -604,7 +677,9 @@ function InsightCard({ insight, lang }: { insight: Insight; lang: Lang }) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-sm font-semibold tracking-[-0.005em]">{insight.title}</div>
+              <div className="text-sm font-semibold tracking-[-0.005em]">
+                {insight.title}
+              </div>
               <Badge className={cn("gap-1", statusBadgeClass(insight.status))}>
                 <span className="size-1.5 rounded-full bg-current" />
                 {statusLabel}
@@ -630,7 +705,9 @@ function InsightCard({ insight, lang }: { insight: Insight; lang: Lang }) {
         <div>
           <div className="mb-1.5 flex items-center justify-between text-[11.5px] text-muted-foreground">
             <span>{insight.meta}</span>
-            <span className="mono num">{Math.round(insight.progress * 100)}%</span>
+            <span className="mono num">
+              {Math.round(insight.progress * 100)}%
+            </span>
           </div>
           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
             <div
@@ -652,7 +729,11 @@ function InsightCard({ insight, lang }: { insight: Insight; lang: Lang }) {
             size="sm"
             variant="ghost"
             onClick={() =>
-              toast(lang === "th" ? `เปิดแบบฟอร์ม "${insight.title}"` : `Opened "${insight.title}" form`)
+              toast(
+                lang === "th"
+                  ? `เปิดแบบฟอร์ม "${insight.title}"`
+                  : `Opened "${insight.title}" form`,
+              )
             }
           >
             {d.actionPlan}
@@ -664,7 +745,13 @@ function InsightCard({ insight, lang }: { insight: Insight; lang: Lang }) {
   );
 }
 
-function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) {
+function SupportNeedsCard({
+  lang,
+  branch,
+}: {
+  lang: Lang;
+  branch: BranchData;
+}) {
   const isTh = lang === "th";
   const d = DASH_I18N[lang];
   const topLowStock = branch.lowStock[0];
@@ -679,7 +766,9 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
       value:
         topLowStock?.[lang] ??
         topExpiring?.[lang] ??
-        (isTh ? "รอข้อมูลสินค้าจาก backend" : "Waiting for backend product data"),
+        (isTh
+          ? "รอข้อมูลสินค้าจาก backend"
+          : "Waiting for backend product data"),
     },
     {
       key: "price",
@@ -723,7 +812,9 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
             </span>
             <span>{d.supportTitle}</span>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">{d.supportSub}</div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            {d.supportSub}
+          </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button size="sm" variant="outline">
@@ -733,7 +824,11 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
           <Button
             size="sm"
             onClick={() =>
-              toast.success(isTh ? "ส่งข้อตกลงให้ทีม Operation แล้ว" : "Committed to Operation team")
+              toast.success(
+                isTh
+                  ? "ส่งข้อตกลงให้ทีม Operation แล้ว"
+                  : "Committed to Operation team",
+              )
             }
           >
             <Check />
@@ -757,7 +852,9 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
                   <div className="text-[11.5px] font-semibold tracking-wider text-muted-foreground uppercase">
                     {field.label}
                   </div>
-                  <div className="mt-1 text-[13.5px] leading-[1.4] font-medium">{field.value}</div>
+                  <div className="mt-1 text-[13.5px] leading-[1.4] font-medium">
+                    {field.value}
+                  </div>
                 </div>
               </div>
             );
@@ -780,12 +877,19 @@ function SupportNeedsCard({ lang, branch }: { lang: Lang; branch: BranchData }) 
   );
 }
 
+function formatSyncTime(date: Date | null, lang: Lang) {
+  if (!date) return lang === "th" ? "กำลังโหลด" : "Loading";
+
+  return new Intl.DateTimeFormat(lang === "th" ? "th-TH" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function DashboardPage() {
   const router = useRouter();
   const { lang, role, currentUser } = useAppShell();
-  const { data: branch } = useBranchData();
-  const { refresh, loading: refreshing } = useBranchRefresh();
-  const [lastUpdated, setLastUpdated] = React.useState(() => new Date());
+  const { data: branch, lastFetchedAt, refetch } = useBranchData();
   const t = getT(lang);
   const d = DASH_I18N[lang];
   const isStaff = role === "staff";
@@ -819,16 +923,10 @@ export function DashboardPage() {
           <>
             <Badge variant="secondary">
               <Clock />
-              {t.common.lastUpdated} {formatUpdatedAt(lastUpdated, lang)}
+              {t.common.lastUpdated} {formatSyncTime(lastFetchedAt, lang)}
             </Badge>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={refreshing}
-              onClick={handleRefresh}
-            >
-              <RefreshCcw className={cn(refreshing && "animate-spin")} />
+            <Button size="sm" variant="outline" onClick={refetch}>
+              <RefreshCcw />
               {t.common.refresh}
             </Button>
             <Button size="sm" variant="outline">

@@ -29,7 +29,7 @@ export interface PaymentShare {
 }
 
 export interface BranchData {
-  id: any;
+  id: number | undefined;
   store: StoreInfo;
   hours: number[];
   hourly: number[];

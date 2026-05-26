@@ -18,7 +18,13 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -67,149 +73,36 @@ interface ExpiringActionItem extends ExpiringItem {
   valueAtRisk: number;
 }
 
-const OOS_ITEMS: OosItem[] = [
-  {
-    sku: "PC-0331",
-    th: "หน้ากากอนามัย 4 ชั้น (50 ชิ้น)",
-    en: "Surgical mask 4-ply x 50",
-    cat: { th: "ของใช้ส่วนตัว", en: "Personal" },
-    stock: 0,
-    reorder: 30,
-    loc: "G-02-A",
-    lostSales: 18400,
-    eta: "2d",
-    supplier: "Top-30",
-  },
-  {
-    sku: "HH-2201",
-    th: "กระดาษทิชชู่ Cellox 12 ม้วน",
-    en: "Cellox tissue x 12",
-    cat: { th: "ของใช้บ้าน", en: "Household" },
-    stock: 0,
-    reorder: 15,
-    loc: "H-06-C",
-    lostSales: 14200,
-    eta: "1d",
-    supplier: "Top-30",
-  },
-  {
-    sku: "HH-1820",
-    th: "ผงซักฟอก เปา 800 ก.",
-    en: "Pao detergent 800g",
-    cat: { th: "ของใช้บ้าน", en: "Household" },
-    stock: 0,
-    reorder: 24,
-    loc: "H-04-B",
-    lostSales: 12800,
-    eta: "3d",
-    supplier: "Top-30",
-  },
-  {
-    sku: "FB-0099",
-    th: "น้ำดื่ม คริสตัล 600 มล. (6 ขวด)",
-    en: "Crystal water 600ml x 6",
-    cat: { th: "เครื่องดื่ม", en: "Beverage" },
-    stock: 2,
-    reorder: 36,
-    loc: "B-01-A",
-    lostSales: 9800,
-    eta: "1d",
-    supplier: "Top-30",
-  },
-  {
-    sku: "PC-0470",
-    th: "ผ้าอนามัยลอริเอะ ขนาดกลาง",
-    en: "Laurier sanitary pads M",
-    cat: { th: "ของใช้ส่วนตัว", en: "Personal" },
-    stock: 0,
-    reorder: 18,
-    loc: "G-05-B",
-    lostSales: 7400,
-    eta: "2d",
-    supplier: "Top-30",
-  },
-  {
-    sku: "FB-2284",
-    th: "เลย์ คลาสสิค 75 ก.",
-    en: "Lays Classic 75g",
-    cat: { th: "ขนม", en: "Snacks" },
-    stock: 4,
-    reorder: 40,
-    loc: "S-02-A",
-    lostSales: 6800,
-    eta: "1d",
-  },
-  {
-    sku: "FB-1880",
-    th: "ผลิตภัณฑ์ทำความสะอาดพื้น",
-    en: "Floor cleaner concentrate",
-    cat: { th: "ของใช้บ้าน", en: "Household" },
-    stock: 0,
-    reorder: 20,
-    loc: "H-08-A",
-    lostSales: 5600,
-    eta: "3d",
-  },
+const OSA_TARGET = 95;
+const SHRINK_COLORS = [
+  "var(--destructive)",
+  "oklch(0.62 0.16 35)",
+  "var(--warn)",
+  "var(--info)",
+  "var(--muted-foreground)",
 ];
 
-const SLOW_ITEMS: SlowItem[] = [
-  {
-    sku: "FB-9920",
-    th: "ซอสมะเขือเทศ พิเศษ 2 กก.",
-    en: "Tomato sauce 2kg pack",
-    cat: { th: "อาหาร", en: "Food" },
-    days: 84,
-    stock: 14,
-    value: 1680,
-  },
-  {
-    sku: "HH-5512",
-    th: "ไม้ถูพื้นไมโครไฟเบอร์",
-    en: "Microfibre floor mop",
-    cat: { th: "ของใช้บ้าน", en: "Household" },
-    days: 76,
-    stock: 8,
-    value: 1840,
-  },
-  {
-    sku: "PC-7220",
-    th: "ครีมอาบน้ำกลิ่นพิเศษ 500 มล.",
-    en: "Premium body wash 500ml",
-    cat: { th: "ของใช้ส่วนตัว", en: "Personal" },
-    days: 68,
-    stock: 22,
-    value: 3960,
-  },
-  {
-    sku: "FB-4108",
-    th: "นัตเล่ ครันชี่บาร์",
-    en: "Nestle Crunchy Bar",
-    cat: { th: "ขนม", en: "Snacks" },
-    days: 62,
-    stock: 36,
-    value: 1080,
-  },
-];
+function buildShrinkByCategory(items: ExpiringActionItem[]) {
+  const grouped = new Map<string, { th: string; en: string; v: number }>();
 
-type AlertFilters = {
-  top30Only: boolean;
-  hideAcked: boolean;
-  categories: string[];
-};
+  for (const item of items) {
+    const key = `${item.cat.th}-${item.cat.en}`;
+    const current = grouped.get(key) ?? {
+      th: item.cat.th,
+      en: item.cat.en,
+      v: 0,
+    };
+    current.v += item.valueAtRisk;
+    grouped.set(key, current);
+  }
 
-const DEFAULT_ALERT_FILTERS: AlertFilters = {
-  top30Only: false,
-  hideAcked: false,
-  categories: [],
-};
-
-const SHRINK_BY_CATEGORY = [
-  { th: "อาหารแช่แข็ง", en: "Frozen", v: 12400, color: "var(--destructive)" },
-  { th: "ผัก-ผลไม้", en: "Produce", v: 9800, color: "oklch(0.62 0.16 35)" },
-  { th: "ของใช้บ้าน", en: "Household", v: 7200, color: "var(--warn)" },
-  { th: "เครื่องดื่ม", en: "Beverages", v: 5600, color: "var(--info)" },
-  { th: "อื่น ๆ", en: "Other", v: 3400, color: "var(--muted-foreground)" },
-];
+  return Array.from(grouped.values())
+    .sort((a, b) => b.v - a.v)
+    .map((category, index) => ({
+      ...category,
+      color: SHRINK_COLORS[index % SHRINK_COLORS.length],
+    }));
+}
 
 export function AlertsPage() {
   const { lang, role } = useAppShell();
@@ -221,9 +114,12 @@ export function AlertsPage() {
   const [q, setQ] = React.useState("");
   const [acked, setAcked] = React.useState<Set<string>>(new Set());
   const [filterOpen, setFilterOpen] = React.useState(false);
-  const [filters, setFilters] = React.useState<AlertFilters>(DEFAULT_ALERT_FILTERS);
-  const [draftFilters, setDraftFilters] =
-    React.useState<AlertFilters>(DEFAULT_ALERT_FILTERS);
+  const [filters, setFilters] = React.useState<AlertFilters>(
+    DEFAULT_ALERT_FILTERS,
+  );
+  const [draftFilters, setDraftFilters] = React.useState<AlertFilters>(
+    DEFAULT_ALERT_FILTERS,
+  );
 
   const expiring = React.useMemo<ExpiringActionItem[]>(
     () =>
@@ -236,37 +132,23 @@ export function AlertsPage() {
   );
 
   const oosItems = React.useMemo(() => {
-    const backendLow = branch.lowStock.map((item, idx): OosItem => ({
-      ...item,
-      lostSales: Math.max(3600, Math.round((item.reorder - item.stock) * 620)),
-      eta: idx % 3 === 0 ? "1d" : idx % 3 === 1 ? "2d" : "3d",
-      supplier: idx < 3 ? "Top-30" : undefined,
-    }));
-    return backendLow.length > 0 ? backendLow : OOS_ITEMS;
+    return branch.lowStock.map(
+      (item, idx): OosItem => ({
+        ...item,
+        lostSales: Math.max(
+          3600,
+          Math.round((item.reorder - item.stock) * 620),
+        ),
+        eta: idx % 3 === 0 ? "1d" : idx % 3 === 1 ? "2d" : "3d",
+        supplier: idx < 3 ? "Top-30" : undefined,
+      }),
+    );
   }, [branch.lowStock]);
 
-  const categoryOptions = React.useMemo(() => {
-    const map = new Map<string, LocalizedString>();
-    for (const item of [...oosItems, ...expiring, ...SLOW_ITEMS]) {
-      map.set(item.cat.en, item.cat);
-    }
-    return [...map.entries()]
-      .map(([value, cat]) => ({ value, label: cat[lang] }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [expiring, lang, oosItems]);
+  const slowItems = React.useMemo<SlowItem[]>(() => [], []);
 
-  const matchesFilters = React.useCallback(
-    (item: { sku: string; th: string; en: string; cat: LocalizedString; supplier?: string }) => {
-      if (filters.hideAcked && acked.has(item.sku)) return false;
-      if (
-        filters.categories.length > 0 &&
-        !filters.categories.includes(item.cat.en)
-      ) {
-        return false;
-      }
-      if (filters.top30Only && tab === "oos" && item.supplier !== "Top-30") {
-        return false;
-      }
+  const filterFn = React.useCallback(
+    (item: { sku: string; th: string; en: string }) => {
       if (!q) return true;
       const needle = q.toLowerCase();
       return (
@@ -278,28 +160,30 @@ export function AlertsPage() {
   );
 
   const filtered = {
-    oos: oosItems.filter(matchesFilters),
-    expiring: expiring.filter(matchesFilters),
-    slow: SLOW_ITEMS.filter(matchesFilters),
+    oos: oosItems.filter(filterFn),
+    expiring: expiring.filter(filterFn),
+    slow: slowItems.filter(filterFn),
   };
 
-  const hasActiveFilters =
-    filters.top30Only ||
-    filters.hideAcked ||
-    filters.categories.length > 0;
-
-  const osa = 91.6;
-  const osaTarget = 95;
-  const shrinkMtd = 38400;
-  const shrinkLast = 34200;
+  const osaInventoryTotal = branch.topProducts.length + branch.lowStock.length;
+  const osa =
+    osaInventoryTotal > 0
+      ? (branch.topProducts.length / osaInventoryTotal) * 100
+      : 0;
+  const osaGap = Math.max(0, OSA_TARGET - osa);
+  const shrinkByCategory = buildShrinkByCategory(expiring);
+  const shrinkMtd = expiring.reduce((sum, item) => sum + item.valueAtRisk, 0);
   const lostSales = oosItems.reduce((sum, item) => sum + item.lostSales, 0);
-  const storeName = branch.store.short[lang] || (isTh ? "สาขาพระราม 9" : "Rama 9 branch");
+  const storeName =
+    branch.store.short[lang] || (isTh ? "สาขาพระราม 9" : "Rama 9 branch");
 
   useHashScroll();
 
   const ack = (sku: string) => {
     setAcked((current) => new Set([...current, sku]));
-    toast.success(isTh ? `เพิ่ม ${sku} เข้าแผนกู้ยอด` : `Added ${sku} to recovery plan`);
+    toast.success(
+      isTh ? `เพิ่ม ${sku} เข้าแผนกู้ยอด` : `Added ${sku} to recovery plan`,
+    );
   };
 
   const syncStock = React.useCallback(() => {
@@ -325,7 +209,12 @@ export function AlertsPage() {
               {t.common.export}
             </Button>
             {role === "manager" && (
-              <Button type="button" size="sm" disabled={syncing} onClick={syncStock}>
+              <Button
+                type="button"
+                size="sm"
+                disabled={syncing}
+                onClick={syncStock}
+              >
                 <RefreshCw className={cn(syncing && "animate-spin")} />
                 {isTh ? "ซิงค์สต็อก" : "Sync stock"}
               </Button>
@@ -338,8 +227,8 @@ export function AlertsPage() {
         lang={lang}
         headline={
           isTh
-            ? "OOS 14 SKU หลัก + OSA ต่ำกว่าเป้า 95% -> กระทบยอดตรง"
-            : "14 core OOS SKUs + OSA below 95% target -> directly drags revenue"
+            ? `OOS ${oosItems.length} SKU + OSA ต่ำกว่าเป้า ${OSA_TARGET}% -> กระทบยอดตรง`
+            : `${oosItems.length} OOS SKUs + OSA below ${OSA_TARGET}% target -> directly drags revenue`
         }
         metric={`${osa.toFixed(1)}%`}
         metricLabel="OSA"
@@ -349,14 +238,18 @@ export function AlertsPage() {
         <SectionHeader
           idx="01"
           title={isTh ? "สถานะหลัก" : "Health snapshot"}
-          sub={isTh ? "ดู scale ของปัญหาก่อนเริ่ม action" : "Frame the scale before acting"}
+          sub={
+            isTh
+              ? "ดู scale ของปัญหาก่อนเริ่ม action"
+              : "Frame the scale before acting"
+          }
         />
       </section>
 
       <div className="mb-3.5 grid gap-3.5 xl:grid-cols-[1.1fr_1fr_1fr]">
         <Card className="rounded-[10px] shadow-none">
           <CardContent className="flex flex-col gap-4 p-4.5 sm:flex-row sm:items-center">
-            <GaugeRing value={osa} target={osaTarget} label="OSA" size={140} />
+            <GaugeRing value={osa} target={OSA_TARGET} label="OSA" size={140} />
             <div className="min-w-0 flex-1">
               <div className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
                 {isTh ? "ความพร้อมสินค้าบนชั้น" : "On-shelf availability"}
@@ -364,18 +257,21 @@ export function AlertsPage() {
               <div className="mt-2 text-[13px] leading-6">
                 {isTh ? (
                   <>
-                    ต่ำกว่าเป้า <b>3.4%</b> หลัก ๆ คือ Top-30 ใน 3 หมวด ของใช้บ้าน
-                    เครื่องดื่ม และของใช้ส่วนตัว
+                    ต่ำกว่าเป้า <b>{osaGap.toFixed(1)}%</b> จากข้อมูลสินค้า
+                    backend: สินค้าขายดี {branch.topProducts.length} SKU
+                    และสต็อกต่ำ {branch.lowStock.length} SKU
                   </>
                 ) : (
                   <>
-                    Below target by <b>3.4%</b>, concentrated in Top-30 across Household,
-                    Beverages and Personal Care.
+                    Below target by <b>{osaGap.toFixed(1)}%</b> from backend
+                    inventory:
+                    {branch.topProducts.length} top SKUs and{" "}
+                    {branch.lowStock.length} low-stock SKUs.
                   </>
                 )}
               </div>
               <div className="mt-2 text-[11.5px] text-muted-foreground">
-                {isTh ? "อัปเดตล่าสุด" : "Last sync"} · 13:48
+                {isTh ? "ซิงค์จาก backend ล่าสุด" : "Synced from backend"}
               </div>
             </div>
           </CardContent>
@@ -392,7 +288,7 @@ export function AlertsPage() {
                   {isTh ? "SKU ที่หมด" : "OOS SKUs"}
                 </div>
                 <div className="num mt-0.5 text-[30px] font-bold leading-none tracking-tight">
-                  14
+                  {oosItems.length}
                 </div>
               </div>
             </div>
@@ -400,23 +296,28 @@ export function AlertsPage() {
               <AlertTriangle className="mr-1 inline size-3.5 align-[-2px]" />
               {isTh ? (
                 <>
-                  มูลค่ายอดที่หายไป <b className="num">{fmtMoney(lostSales)}</b> ใน 7 วัน
+                  มูลค่ายอดที่หายไป <b className="num">{fmtMoney(lostSales)}</b>{" "}
+                  ใน 7 วัน
                 </>
               ) : (
                 <>
-                  Estimated lost sales <b className="num">{fmtMoney(lostSales)}</b> over 7 days
+                  Estimated lost sales{" "}
+                  <b className="num">{fmtMoney(lostSales)}</b> over 7 days
                 </>
               )}
             </div>
             <div className="mt-2 text-[11.5px] text-muted-foreground">
-              {isTh ? "เพิ่มขึ้น" : "Up"}{" "}
-              <span className="num font-semibold text-destructive">+55%</span>{" "}
-              {isTh ? "เทียบกับ 7 วันก่อน" : "vs prev 7d"}
+              {isTh
+                ? "อ้างอิงจาก lowStock backend"
+                : "Based on backend lowStock records"}
             </div>
           </CardContent>
         </Card>
 
-        <Card id="inventory-aging-shrinkage" className="scroll-mt-20 rounded-[10px] shadow-none">
+        <Card
+          id="inventory-aging-shrinkage"
+          className="scroll-mt-20 rounded-[10px] shadow-none"
+        >
           <CardContent className="p-4.5">
             <div className="flex items-center gap-3">
               <div className="flex size-11 items-center justify-center rounded-[10px] bg-warn-50 text-[oklch(0.45_0.13_70)]">
@@ -432,7 +333,7 @@ export function AlertsPage() {
               </div>
             </div>
             <div className="mt-3 space-y-1">
-              {SHRINK_BY_CATEGORY.map((category) => (
+              {shrinkByCategory.map((category) => (
                 <div key={category.en} className="flex items-center gap-2">
                   <span
                     className="size-2 shrink-0 rounded-[2px]"
@@ -441,16 +342,16 @@ export function AlertsPage() {
                   <span className="flex-1 text-[11.5px] text-muted-foreground">
                     {category[lang]}
                   </span>
-                  <span className="num text-[11.5px] font-semibold">{fmtMoney(category.v)}</span>
+                  <span className="num text-[11.5px] font-semibold">
+                    {fmtMoney(category.v)}
+                  </span>
                 </div>
               ))}
             </div>
             <div className="mt-2 text-[11.5px] text-muted-foreground">
-              {isTh ? "เพิ่มขึ้น" : "Up"}{" "}
-              <span className="num font-semibold text-[oklch(0.45_0.13_70)]">
-                +{(((shrinkMtd - shrinkLast) / shrinkLast) * 100).toFixed(1)}%
-              </span>{" "}
-              {isTh ? "เทียบเดือนก่อน" : "vs last month"}
+              {isTh
+                ? "คำนวณจากสินค้าที่ใกล้หมดอายุ"
+                : "Calculated from near-expiry inventory"}
             </div>
           </CardContent>
         </Card>
@@ -459,7 +360,11 @@ export function AlertsPage() {
       <SectionHeader
         idx="02"
         title={isTh ? "รายการที่ต้องดำเนินการ" : "Items needing action"}
-        sub={isTh ? "เลือก SKU เพื่อกำหนดแผนกู้ยอด" : "Select SKUs to add to recovery actions"}
+        sub={
+          isTh
+            ? "เลือก SKU เพื่อกำหนดแผนกู้ยอด"
+            : "Select SKUs to add to recovery actions"
+        }
         right={
           <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
             <Button
@@ -536,13 +441,15 @@ export function AlertsPage() {
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList className="h-auto flex-wrap">
               <TabsTrigger value="oos">
-                {isTh ? "หมด/ต่ำเร่งด่วน" : "OOS critical"} · {filtered.oos.length}
+                {isTh ? "หมด/ต่ำเร่งด่วน" : "OOS critical"} ·{" "}
+                {filtered.oos.length}
               </TabsTrigger>
               <TabsTrigger value="expiring">
-                {isTh ? "ใกล้หมดอายุ" : "Near expiry"} · {filtered.expiring.length}
+                {isTh ? "ใกล้หมดอายุ" : "Near expiry"} ·{" "}
+                {filtered.expiring.length}
               </TabsTrigger>
               <TabsTrigger value="slow">
-                {isTh ? "ค้างสต็อก" : "Slow movers"} · {filtered.slow.length}
+                {isTh ? "ค้างสต็อก" : "Slow movers"} · {slowItems.length}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -606,7 +513,9 @@ function OosTable({
           <th>{t.alert.product}</th>
           <th>{isTh ? "ระดับ" : "Priority"}</th>
           <th>{isTh ? "คงเหลือ / จุดสั่ง" : "On hand / reorder"}</th>
-          <th className="text-right">{isTh ? "ยอดที่เสียไป (7d)" : "Lost sales (7d)"}</th>
+          <th className="text-right">
+            {isTh ? "ยอดที่เสียไป (7d)" : "Lost sales (7d)"}
+          </th>
           <th>{isTh ? "เติมเข้าใน" : "Replenish ETA"}</th>
           <th className="text-right">{t.common.actions}</th>
         </tr>
@@ -619,7 +528,9 @@ function OosTable({
             <tr key={item.sku} className={cn(isAcked && "opacity-50")}>
               <td>
                 <div className="flex items-center gap-2.5">
-                  {isCritical && <span className="h-10 w-1 rounded-full bg-destructive" />}
+                  {isCritical && (
+                    <span className="h-10 w-1 rounded-full bg-destructive" />
+                  )}
                   <div>
                     <div className="text-[13px] font-medium">{item[lang]}</div>
                     <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">
@@ -629,7 +540,10 @@ function OosTable({
                 </div>
               </td>
               <td>
-                <PriorityPill lang={lang} level={isCritical ? "p1" : item.stock === 0 ? "p2" : "p3"} />
+                <PriorityPill
+                  lang={lang}
+                  level={isCritical ? "p1" : item.stock === 0 ? "p2" : "p3"}
+                />
                 {isCritical && (
                   <div className="mt-1 text-[10.5px] text-muted-foreground">
                     {isTh ? "อยู่ใน Top-30" : "Top-30 SKU"}
@@ -709,7 +623,9 @@ function ExpiringTable({
           <th>{isTh ? "ระดับ" : "Priority"}</th>
           <th>{t.alert.expiry}</th>
           <th>{t.alert.daysLeft}</th>
-          <th className="text-right">{isTh ? "มูลค่าเสี่ยง" : "Value at risk"}</th>
+          <th className="text-right">
+            {isTh ? "มูลค่าเสี่ยง" : "Value at risk"}
+          </th>
           <th className="text-right">{t.common.actions}</th>
         </tr>
       </thead>
@@ -726,7 +642,10 @@ function ExpiringTable({
                 </div>
               </td>
               <td>
-                <PriorityPill lang={lang} level={isUrgent ? "p1" : item.daysLeft <= 3 ? "p2" : "p3"} />
+                <PriorityPill
+                  lang={lang}
+                  level={isUrgent ? "p1" : item.daysLeft <= 3 ? "p2" : "p3"}
+                />
               </td>
               <td className="num">{fmtD(item.exp, lang)}</td>
               <td>
@@ -734,13 +653,21 @@ function ExpiringTable({
                   className={cn(
                     "num font-semibold",
                     isUrgent && "text-destructive",
-                    !isUrgent && item.daysLeft <= 3 && "text-[oklch(0.45_0.13_70)]",
+                    !isUrgent &&
+                      item.daysLeft <= 3 &&
+                      "text-[oklch(0.45_0.13_70)]",
                   )}
                 >
-                  {item.daysLeft === 0 ? (isTh ? "วันนี้" : "today") : `${item.daysLeft} ${t.alert.days}`}
+                  {item.daysLeft === 0
+                    ? isTh
+                      ? "วันนี้"
+                      : "today"
+                    : `${item.daysLeft} ${t.alert.days}`}
                 </span>
               </td>
-              <td className="num text-right font-semibold">{fmtMoney(item.valueAtRisk)}</td>
+              <td className="num text-right font-semibold">
+                {fmtMoney(item.valueAtRisk)}
+              </td>
               <td className="text-right">
                 {!isAcked ? (
                   <div className="inline-flex gap-1.5">
@@ -803,16 +730,23 @@ function SlowTable({
             <tr key={item.sku} className={cn(isAcked && "opacity-50")}>
               <td>
                 <div className="text-[13px] font-medium">{item[lang]}</div>
-                <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">{item.sku}</div>
+                <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">
+                  {item.sku}
+                </div>
               </td>
               <td>
-                <Badge variant="outline" className="gap-1 text-[oklch(0.45_0.13_70)]">
+                <Badge
+                  variant="outline"
+                  className="gap-1 text-[oklch(0.45_0.13_70)]"
+                >
                   <Clock className="size-3" />
                   {item.days} {t.alert.days}
                 </Badge>
               </td>
               <td className="num">{item.stock}</td>
-              <td className="num text-right font-semibold">{fmtMoney(item.value)}</td>
+              <td className="num text-right font-semibold">
+                {fmtMoney(item.value)}
+              </td>
               <td className="text-right">
                 {!isAcked ? (
                   <div className="inline-flex gap-1.5">
@@ -857,7 +791,11 @@ function EmptyRow({ colSpan, lang }: { colSpan: number; lang: Lang }) {
       <td colSpan={colSpan}>
         <Empty
           title={getT(lang).common.noData}
-          sub={lang === "th" ? "ไม่พบสินค้าตามคำค้นหา" : "No items match your search"}
+          sub={
+            lang === "th"
+              ? "ไม่พบสินค้าตามคำค้นหา"
+              : "No items match your search"
+          }
         />
       </td>
     </tr>
@@ -885,17 +823,25 @@ function CrisisContextStrip({
           <div className="text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             FACT
           </div>
-          <div className="mt-1 text-[12px] font-semibold">Loss & OOS · Stock Availability</div>
+          <div className="mt-1 text-[12px] font-semibold">
+            Loss & OOS · Stock Availability
+          </div>
         </div>
       </div>
       <div className="min-w-0">
         <div className="text-[11.5px] font-bold uppercase tracking-[0.06em] text-destructive">
-          {lang === "th" ? "บริบทวิกฤต · TOP FLOP" : "Crisis context · TOP FLOP"}
+          {lang === "th"
+            ? "บริบทวิกฤต · TOP FLOP"
+            : "Crisis context · TOP FLOP"}
         </div>
-        <div className="mt-1 text-[13.5px] leading-5 text-foreground">{headline}</div>
+        <div className="mt-1 text-[13.5px] leading-5 text-foreground">
+          {headline}
+        </div>
       </div>
       <div className="text-left md:text-right">
-        <div className="num text-[22px] font-bold leading-none text-destructive">{metric}</div>
+        <div className="num text-[22px] font-bold leading-none text-destructive">
+          {metric}
+        </div>
         <div className="mt-1 text-[10.5px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
           {metricLabel}
         </div>
@@ -922,8 +868,12 @@ function SectionHeader({
           {idx}
         </span>
         <div>
-          <div className="text-[14.5px] font-semibold tracking-normal">{title}</div>
-          {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+          <div className="text-[14.5px] font-semibold tracking-normal">
+            {title}
+          </div>
+          {sub && (
+            <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>
+          )}
         </div>
       </div>
       {right}
@@ -953,8 +903,16 @@ function GaugeRing({
   const targetY = size / 2 + Math.sin((targetAngle * Math.PI) / 180) * radius;
 
   return (
-    <div className="relative grid shrink-0 place-items-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+    <div
+      className="relative grid shrink-0 place-items-center"
+      style={{ width: size, height: size }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -976,11 +934,15 @@ function GaugeRing({
         <circle cx={targetX} cy={targetY} r="3.5" fill="var(--foreground)" />
       </svg>
       <div className="absolute text-center">
-        <div className="num text-[30px] font-bold leading-none tracking-tight">{value.toFixed(1)}%</div>
+        <div className="num text-[30px] font-bold leading-none tracking-tight">
+          {value.toFixed(1)}%
+        </div>
         <div className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           {label}
         </div>
-        <div className="num mt-1 text-[10px] text-muted-foreground">target {target}%</div>
+        <div className="num mt-1 text-[10px] text-muted-foreground">
+          target {target}%
+        </div>
       </div>
     </div>
   );
@@ -999,7 +961,12 @@ function PriorityPill({ lang, level }: { lang: Lang; level: Priority }) {
   }[level];
 
   return (
-    <span className={cn("inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold", className)}>
+    <span
+      className={cn(
+        "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
+        className,
+      )}
+    >
       {label}
     </span>
   );
@@ -1062,7 +1029,10 @@ function RecoveryFooter({ lang }: { lang: Lang }) {
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-lg border border-border bg-card p-3">
+          <div
+            key={item.label}
+            className="rounded-lg border border-border bg-card p-3"
+          >
             <div className="flex items-center gap-2">
               <div className="flex size-8 items-center justify-center rounded-md bg-primary-50 text-primary">
                 <item.icon className="size-4" />
@@ -1072,7 +1042,9 @@ function RecoveryFooter({ lang }: { lang: Lang }) {
             <div className="mt-3 text-[12.5px] leading-5">{item.action}</div>
             <div className="mt-3 flex items-center justify-between gap-3 text-[11.5px] text-muted-foreground">
               <span>{item.window}</span>
-              <span className="num font-semibold text-primary">+{fmtMoney(item.upside, { compact: true })}</span>
+              <span className="num font-semibold text-primary">
+                +{fmtMoney(item.upside, { compact: true })}
+              </span>
             </div>
           </div>
         ))}

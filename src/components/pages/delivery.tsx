@@ -47,152 +47,99 @@ import type { Delivery, DeliveryStatus, Lang, Role } from "@/types";
 type Tab = "active" | "completed";
 type Tone = "warn" | "danger" | "info" | "primary";
 
-type DeliveryFilters = {
-  lateOnly: boolean;
-  status: DeliveryStatus | "all";
-};
-
-const DEFAULT_DELIVERY_FILTERS: DeliveryFilters = {
-  lateOnly: false,
-  status: "all",
-};
-
-const OTIF = 87.3;
 const OTIF_TARGET = 95;
-const OTIF_LAST = 92.1;
-const OTIF_TREND = [94, 93, 92, 91, 90, 89, 87.3];
-const OSX_TODAY = 18400;
-const OSX_TARGET = 24000;
 
-const ROOT_CAUSE = [
-  {
-    th: "OOS — สินค้าสั่งหมด ต้องตัดออก",
-    en: "OOS — items removed from order",
-    value: 0.52,
-    color: "var(--destructive)",
-  },
-  {
-    th: "ส่งล่าช้า (จราจร, ระยะทาง)",
-    en: "Late (traffic, distance)",
-    value: 0.28,
-    color: "oklch(0.55 0.15 70)",
-  },
-  {
-    th: "ส่งบางส่วน (Substitution)",
-    en: "Partial (substitution)",
-    value: 0.12,
-    color: "var(--info)",
-  },
-  {
-    th: "จัดผิด/คุณภาพ",
-    en: "Pick error / quality",
-    value: 0.08,
-    color: "var(--muted-foreground)",
-  },
-] satisfies Array<{ th: string; en: string; value: number; color: string }>;
+type RootCause = {
+  th: string;
+  en: string;
+  value: number;
+  color: string;
+};
 
-const DRIVERS = [
-  { th: "วินัย", en: "Winai", today: 7, onTime: 0.86, distance: 12.4 },
-  { th: "สมชาย", en: "Somchai", today: 6, onTime: 0.74, distance: 11.8 },
-  { th: "บุญส่ง", en: "Boonsong", today: 5, onTime: 0.92, distance: 9.6 },
-] satisfies Array<{
+type DriverStats = {
   th: string;
   en: string;
   today: number;
   onTime: number;
   distance: number;
-}>;
-
-const FALLBACK_STORE = {
-  short: { th: "ทองหล่อ ซ.13", en: "Thonglor 13" },
 };
 
-const FALLBACK_DELIVERIES = [
-  {
-    id: "BC-26052201",
-    customer: { th: "คุณณัฐกานต์ ม.", en: "K. Natthakarn M." },
-    addr: { th: "ทองหล่อ ซ.10", en: "Thonglor Soi 10" },
-    items: 8,
-    value: 487,
-    driver: { th: "วินัย", en: "Winai" },
-    status: "enRoute",
-    eta: "14:25",
-    late: false,
-    distance: 1.2,
-  },
-  {
-    id: "BC-26052202",
-    customer: { th: "คุณปานทิพย์ ส.", en: "K. Panthip S." },
-    addr: { th: "เอกมัย ซ.12", en: "Ekkamai Soi 12" },
-    items: 22,
-    value: 1284,
-    driver: { th: "สมชาย", en: "Somchai" },
-    status: "enRoute",
-    eta: "14:35",
-    late: true,
-    distance: 2.4,
-  },
-  {
-    id: "BC-26052203",
-    customer: { th: "คุณภาสกร ว.", en: "K. Phasakorn W." },
-    addr: { th: "ทองหล่อ ซ.5", en: "Thonglor Soi 5" },
-    items: 14,
-    value: 892,
-    driver: { th: "บุญส่ง", en: "Boonsong" },
-    status: "preparing",
-    eta: "15:00",
-    late: false,
-    distance: 0.8,
-  },
-  {
-    id: "BC-26052204",
-    customer: { th: "คุณกัลยา ก.", en: "K. Kanlaya K." },
-    addr: { th: "พร้อมพงษ์", en: "Phrom Phong" },
-    items: 31,
-    value: 1872,
-    driver: { th: "วินัย", en: "Winai" },
-    status: "preparing",
-    eta: "15:15",
-    late: false,
-    distance: 1.8,
-  },
-  {
-    id: "BC-26052205",
-    customer: { th: "คุณธีรพล ต.", en: "K. Teeraphol T." },
-    addr: { th: "ทองหล่อ ซ.8", en: "Thonglor Soi 8" },
-    items: 6,
-    value: 320,
-    driver: { th: "สมชาย", en: "Somchai" },
-    status: "delivered",
-    eta: "13:50",
-    late: false,
-    distance: 1,
-  },
-  {
-    id: "BC-26052206",
-    customer: { th: "คุณวรินทร ก.", en: "K. Warintorn K." },
-    addr: { th: "เอกมัย ซ.4", en: "Ekkamai Soi 4" },
-    items: 12,
-    value: 654,
-    driver: { th: "บุญส่ง", en: "Boonsong" },
-    status: "delivered",
-    eta: "13:20",
-    late: false,
-    distance: 2,
-  },
-  {
-    id: "BC-26052207",
-    customer: { th: "คุณพิชชา ม.", en: "K. Phichcha M." },
-    addr: { th: "ทองหล่อ ซ.23", en: "Thonglor Soi 23" },
-    items: 4,
-    value: 198,
-    driver: { th: "วินัย", en: "Winai" },
-    status: "delivered",
-    eta: "12:45",
-    late: false,
-    distance: 1.5,
-  },
-] satisfies Delivery[];
+function percent(part: number, total: number) {
+  return total > 0 ? (part / total) * 100 : 0;
+}
+
+function buildRootCause(
+  deliveries: Delivery[],
+  lowStockCount: number,
+): RootCause[] {
+  const late = deliveries.filter((delivery) => delivery.late).length;
+  const preparing = deliveries.filter(
+    (delivery) => delivery.status === "preparing",
+  ).length;
+  const enRoute = deliveries.filter(
+    (delivery) => delivery.status === "enRoute",
+  ).length;
+  const total = Math.max(1, late + preparing + enRoute + lowStockCount);
+
+  return [
+    {
+      th: "OOS — SKU สต็อกต่ำที่กระทบออร์เดอร์",
+      en: "OOS — low-stock SKUs affecting orders",
+      value: lowStockCount / total,
+      color: "var(--destructive)",
+    },
+    {
+      th: "ส่งล่าช้า",
+      en: "Late deliveries",
+      value: late / total,
+      color: "oklch(0.55 0.15 70)",
+    },
+    {
+      th: "กำลังจัดสินค้า",
+      en: "Orders being picked",
+      value: preparing / total,
+      color: "var(--info)",
+    },
+    {
+      th: "อยู่ระหว่างจัดส่ง",
+      en: "Orders en route",
+      value: enRoute / total,
+      color: "var(--muted-foreground)",
+    },
+  ];
+}
+
+function buildDriverStats(deliveries: Delivery[]): DriverStats[] {
+  const drivers = new Map<string, DriverStats & { late: number }>();
+
+  for (const delivery of deliveries) {
+    const key = `${delivery.driver.th}-${delivery.driver.en}`;
+    const current = drivers.get(key) ?? {
+      th: delivery.driver.th,
+      en: delivery.driver.en,
+      today: 0,
+      late: 0,
+      onTime: 0,
+      distance: 0,
+    };
+
+    current.today += 1;
+    current.late += delivery.late ? 1 : 0;
+    current.distance += delivery.distance;
+    drivers.set(key, current);
+  }
+
+  return Array.from(drivers.values())
+    .map((driver) => ({
+      th: driver.th,
+      en: driver.en,
+      today: driver.today,
+      onTime:
+        driver.today > 0 ? (driver.today - driver.late) / driver.today : 0,
+      distance: driver.distance,
+    }))
+    .sort((a, b) => b.today - a.today);
+}
 
 export function DeliveryPage() {
   const { lang, role } = useAppShell();
@@ -202,17 +149,9 @@ export function DeliveryPage() {
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<Tab>("active");
   const [selected, setSelected] = React.useState<string | null>(null);
-  const [filterOpen, setFilterOpen] = React.useState(false);
-  const [filters, setFilters] = React.useState<DeliveryFilters>(
-    DEFAULT_DELIVERY_FILTERS,
-  );
-  const [draftFilters, setDraftFilters] = React.useState<DeliveryFilters>(
-    DEFAULT_DELIVERY_FILTERS,
-  );
 
-  const deliveries =
-    branch.deliveries.length > 0 ? branch.deliveries : FALLBACK_DELIVERIES;
-  const storeInfo = branch.store.short[lang] ? branch.store : FALLBACK_STORE;
+  const deliveries = branch.deliveries;
+  const storeInfo = branch.store;
   const active = deliveries.filter(
     (delivery) =>
       delivery.status === "enRoute" || delivery.status === "preparing",
@@ -220,28 +159,20 @@ export function DeliveryPage() {
   const completed = deliveries.filter(
     (delivery) => delivery.status === "delivered",
   );
-  const list = React.useMemo(() => {
-    const base = tab === "active" ? active : completed;
-    return base.filter((delivery) => {
-      if (filters.lateOnly && !delivery.late) return false;
-      if (filters.status !== "all" && delivery.status !== filters.status) {
-        return false;
-      }
-      return true;
-    });
-  }, [active, completed, filters, tab]);
-
-  const hasActiveFilters =
-    filters.lateOnly || filters.status !== "all";
-
-  const statusOptions = React.useMemo(
-    () => [
-      { value: "preparing", label: t.deliv.preparing },
-      { value: "enRoute", label: t.deliv.enRoute },
-      { value: "delivered", label: t.deliv.delivered },
-    ],
-    [t],
+  const lateCount = deliveries.filter((delivery) => delivery.late).length;
+  const otif = percent(deliveries.length - lateCount, deliveries.length);
+  const osxToday = deliveries.reduce(
+    (sum, delivery) => sum + delivery.value,
+    0,
   );
+  const otifTrend = [
+    completed.length,
+    completed.length + active.filter((delivery) => !delivery.late).length,
+    deliveries.length - lateCount,
+  ];
+  const rootCause = buildRootCause(deliveries, branch.lowStock.length);
+  const drivers = buildDriverStats(deliveries);
+  const list = tab === "active" ? active : completed;
   const selectedDelivery = selected
     ? deliveries.find((delivery) => delivery.id === selected)
     : null;
@@ -280,10 +211,10 @@ export function DeliveryPage() {
           factsTileName="OSX Sales & %OTIF"
           headline={
             isTh
-              ? `OTIF ลดจาก ${OTIF_LAST}% เหลือ ${OTIF}% — เหตุหลักคือ OOS ตัดออร์เดอร์`
-              : `OTIF dropped from ${OTIF_LAST}% to ${OTIF}% — primarily from OOS cuts`
+              ? `OTIF ปัจจุบัน ${otif.toFixed(1)}% จาก ${deliveries.length} ออร์เดอร์ — ล่าช้า ${lateCount} ออร์เดอร์`
+              : `Current OTIF is ${otif.toFixed(1)}% across ${deliveries.length} orders — ${lateCount} late`
           }
-          metric={`${OTIF.toFixed(1)}%`}
+          metric={`${otif.toFixed(1)}%`}
           metricLabel="OTIF"
           tone="warn"
         />
@@ -299,40 +230,44 @@ export function DeliveryPage() {
         <Card className="rounded-[10px] shadow-none">
           <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
             <GaugeRing
-              value={OTIF}
+              value={otif}
               target={OTIF_TARGET}
-              label="OTIF · 7d"
+              label="OTIF"
               size={150}
               tone="warn"
             />
             <div className="min-w-0 flex-1">
               <div className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
-                {isTh ? "แนวโน้ม 7 วัน" : "7-day trend"}
+                {isTh ? "สถานะวันนี้" : "Today's status"}
               </div>
               <div className="mt-2">
-                <Sparkline data={OTIF_TREND} width={150} height={36} trend={-1} />
+                <Sparkline
+                  data={otifTrend}
+                  width={150}
+                  height={36}
+                  trend={lateCount > 0 ? -1 : 1}
+                />
               </div>
               <div className="mt-1.5 text-xs text-muted-foreground">
                 <Badge variant="destructive" className="gap-1">
                   <ArrowDown className="size-3" />
-                  {(OTIF - OTIF_LAST).toFixed(1)} pts
+                  {lateCount}
                 </Badge>{" "}
-                {isTh ? "จากสัปดาห์ก่อน" : "vs last week"}
+                {isTh ? "ออร์เดอร์ล่าช้า" : "late orders"}
               </div>
               <div className="mt-2.5 text-xs">
                 <div className="flex justify-between gap-3">
                   <span className="text-muted-foreground">
-                    {isTh ? "OSX วันนี้" : "OSX today"}
+                    {isTh ? "มูลค่าออร์เดอร์วันนี้" : "Today's order value"}
                   </span>
                   <span className="num font-semibold">
-                    {role === "staff" ? "—" : fmtMoney(OSX_TODAY)}
-                    <span className="font-medium text-muted-foreground">
-                      {" "}
-                      / {role === "staff" ? "—" : fmtMoney(OSX_TARGET)}
-                    </span>
+                    {role === "staff" ? "—" : fmtMoney(osxToday)}
                   </span>
                 </div>
-                <Meter value={(OSX_TODAY / OSX_TARGET) * 100} tone="warn" />
+                <Meter
+                  value={otif}
+                  tone={otif >= OTIF_TARGET ? "primary" : "warn"}
+                />
               </div>
             </div>
           </CardContent>
@@ -357,7 +292,7 @@ export function DeliveryPage() {
           </CardHeader>
           <CardContent className="px-4">
             <div className="flex flex-col gap-2.5">
-              {ROOT_CAUSE.map((cause) => (
+              {rootCause.map((cause) => (
                 <div key={cause.en}>
                   <div className="mb-1 flex justify-between gap-3 text-[12.5px]">
                     <span className="flex items-center gap-1.5">
@@ -382,13 +317,16 @@ export function DeliveryPage() {
             >
               {isTh ? (
                 <>
-                  <b>52% ของ OTIF ที่พลาด</b> เกิดจาก OOS — ต้องกลับไปแก้ที่
-                  Stock Availability (หน้า Alerts) เป็นอันดับแรก
+                  ดูจากข้อมูล backend ตอนนี้ พบ{" "}
+                  <b>{lateCount} ออร์เดอร์ล่าช้า</b> และ{" "}
+                  <b>{branch.lowStock.length} SKU สต็อกต่ำ</b>{" "}
+                  ที่ควรเชื่อมกับหน้า Alerts
                 </>
               ) : (
                 <>
-                  <b>52% of misses</b> are OOS-driven — fix Stock Availability
-                  first (Alerts page).
+                  Backend data currently shows <b>{lateCount} late orders</b>{" "}
+                  and <b>{branch.lowStock.length} low-stock SKUs</b> to
+                  reconcile with Alerts.
                 </>
               )}
             </InsightNote>
@@ -403,7 +341,7 @@ export function DeliveryPage() {
       />
 
       <div className="mb-3.5 grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
-        {DRIVERS.map((driver) => (
+        {drivers.map((driver) => (
           <Card key={driver.en} className="rounded-[10px] shadow-none">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -440,6 +378,15 @@ export function DeliveryPage() {
             </CardContent>
           </Card>
         ))}
+        {drivers.length === 0 && (
+          <Card className="rounded-[10px] shadow-none md:col-span-2 xl:col-span-3">
+            <CardContent className="p-4 text-sm text-muted-foreground">
+              {isTh
+                ? "ยังไม่มีข้อมูลคนขับจาก backend"
+                : "No backend driver data yet."}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <SectionHeader
@@ -542,9 +489,7 @@ export function DeliveryPage() {
               id="delivery-late"
               label={t.deliv.late}
               description={
-                isTh
-                  ? "แสดงเฉพาะออเดอร์ที่ล่าช้า"
-                  : "Show only late deliveries"
+                isTh ? "แสดงเฉพาะออเดอร์ที่ล่าช้า" : "Show only late deliveries"
               }
               checked={draftFilters.lateOnly}
               onCheckedChange={(lateOnly) =>
@@ -563,6 +508,13 @@ export function DeliveryPage() {
                 onSelect={() => setSelected(delivery.id)}
               />
             ))}
+            {list.length === 0 && (
+              <div className="px-4.5 py-6 text-center text-sm text-muted-foreground">
+                {isTh
+                  ? "ยังไม่มีออร์เดอร์ในสถานะนี้"
+                  : "No orders in this status."}
+              </div>
+            )}
           </div>
         </Card>
       </div>
@@ -676,13 +628,21 @@ function DeliveryDetail({
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-4.5">
-          <DetailField label={t.deliv.customer} value={delivery.customer[lang]} icon={User} />
+          <DetailField
+            label={t.deliv.customer}
+            value={delivery.customer[lang]}
+            icon={User}
+          />
           <DetailField
             label={isTh ? "ที่อยู่" : "Address"}
             value={delivery.addr[lang]}
             icon={Pin}
           />
-          <DetailField label={t.deliv.driver} value={delivery.driver[lang]} icon={Truck} />
+          <DetailField
+            label={t.deliv.driver}
+            value={delivery.driver[lang]}
+            icon={Truck}
+          />
           <DetailField
             label={isTh ? "จำนวนสินค้า" : "Items"}
             value={`${delivery.items} ${isTh ? "ชิ้น" : "items"}`}
@@ -697,7 +657,9 @@ function DeliveryDetail({
             label={t.deliv.eta}
             value={delivery.eta + (delivery.late ? ` · ${t.deliv.late}` : "")}
             icon={Clock}
-            valueClass={delivery.late ? "text-[color:oklch(0.45_0.13_70)]" : undefined}
+            valueClass={
+              delivery.late ? "text-[color:oklch(0.45_0.13_70)]" : undefined
+            }
           />
         </div>
 
@@ -799,7 +761,12 @@ function DeliveryMap({
         height="100%"
       >
         <defs>
-          <pattern id="delivery-grid" width="6" height="6" patternUnits="userSpaceOnUse">
+          <pattern
+            id="delivery-grid"
+            width="6"
+            height="6"
+            patternUnits="userSpaceOnUse"
+          >
             <path
               d="M 6 0 L 0 0 0 6"
               fill="none"
@@ -809,12 +776,42 @@ function DeliveryMap({
           </pattern>
         </defs>
         <rect width="100" height="100" fill="url(#delivery-grid)" />
-        <path d="M0 50 L100 50" stroke="var(--border-strong)" strokeWidth="1.5" opacity=".6" />
-        <path d="M50 0 L50 100" stroke="var(--border-strong)" strokeWidth="1.5" opacity=".6" />
-        <path d="M0 25 L100 25" stroke="var(--border-strong)" strokeWidth=".7" opacity=".4" />
-        <path d="M0 75 L100 75" stroke="var(--border-strong)" strokeWidth=".7" opacity=".4" />
-        <path d="M25 0 L25 100" stroke="var(--border-strong)" strokeWidth=".7" opacity=".4" />
-        <path d="M75 0 L75 100" stroke="var(--border-strong)" strokeWidth=".7" opacity=".4" />
+        <path
+          d="M0 50 L100 50"
+          stroke="var(--border-strong)"
+          strokeWidth="1.5"
+          opacity=".6"
+        />
+        <path
+          d="M50 0 L50 100"
+          stroke="var(--border-strong)"
+          strokeWidth="1.5"
+          opacity=".6"
+        />
+        <path
+          d="M0 25 L100 25"
+          stroke="var(--border-strong)"
+          strokeWidth=".7"
+          opacity=".4"
+        />
+        <path
+          d="M0 75 L100 75"
+          stroke="var(--border-strong)"
+          strokeWidth=".7"
+          opacity=".4"
+        />
+        <path
+          d="M25 0 L25 100"
+          stroke="var(--border-strong)"
+          strokeWidth=".7"
+          opacity=".4"
+        />
+        <path
+          d="M75 0 L75 100"
+          stroke="var(--border-strong)"
+          strokeWidth=".7"
+          opacity=".4"
+        />
         <circle
           cx={cx}
           cy={cy}
@@ -908,10 +905,22 @@ function DeliveryMap({
         {storeLabel}
       </div>
       <div className="absolute bottom-2.5 left-2.5 flex flex-col gap-1 rounded-lg border bg-card/90 p-2.5 text-[11px] backdrop-blur-sm">
-        <LegendDot color="var(--info)" label={lang === "th" ? "อยู่ระหว่างทาง" : "En route"} />
-        <LegendDot color="var(--warn)" label={lang === "th" ? "ล่าช้า" : "Late"} />
-        <LegendDot color="var(--muted-foreground)" label={lang === "th" ? "กำลังจัด" : "Preparing"} />
-        <LegendDot color="var(--primary)" label={lang === "th" ? "ส่งแล้ว" : "Delivered"} />
+        <LegendDot
+          color="var(--info)"
+          label={lang === "th" ? "อยู่ระหว่างทาง" : "En route"}
+        />
+        <LegendDot
+          color="var(--warn)"
+          label={lang === "th" ? "ล่าช้า" : "Late"}
+        />
+        <LegendDot
+          color="var(--muted-foreground)"
+          label={lang === "th" ? "กำลังจัด" : "Preparing"}
+        />
+        <LegendDot
+          color="var(--primary)"
+          label={lang === "th" ? "ส่งแล้ว" : "Delivered"}
+        />
       </div>
     </div>
   );
@@ -959,7 +968,9 @@ function CrisisContextStrip({
       </div>
       <div className="min-w-0">
         <div className="text-[11.5px] font-bold uppercase tracking-[0.06em]">
-          {lang === "th" ? "บริบทวิกฤต · TOP FLOP" : "Crisis context · TOP FLOP"}
+          {lang === "th"
+            ? "บริบทวิกฤต · TOP FLOP"
+            : "Crisis context · TOP FLOP"}
         </div>
         <div className="mt-1 text-[13.5px] leading-5 text-foreground">
           {headline}
@@ -991,8 +1002,12 @@ function SectionHeader({
           {idx}
         </span>
         <div>
-          <div className="text-[14.5px] font-semibold tracking-normal">{title}</div>
-          {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+          <div className="text-[14.5px] font-semibold tracking-normal">
+            {title}
+          </div>
+          {sub && (
+            <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>
+          )}
         </div>
       </div>
     </div>
@@ -1033,7 +1048,12 @@ function GaugeRing({
       className="relative grid shrink-0 place-items-center"
       style={{ width: size, height: size }}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        className="-rotate-90"
+      >
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -1086,7 +1106,13 @@ function InsightNote({
       : "border-primary/25 bg-primary-50/70 text-primary";
 
   return (
-    <div className={cn("rounded-lg border p-3 text-[12.5px] leading-5", classNames, className)}>
+    <div
+      className={cn(
+        "rounded-lg border p-3 text-[12.5px] leading-5",
+        classNames,
+        className,
+      )}
+    >
       <div className="mb-1 flex items-center gap-1.5 font-semibold">
         <Sparkles className="size-3.5" />
         {title}
@@ -1143,7 +1169,10 @@ function RecoveryFooter({ lang, role }: { lang: Lang; role: Role }) {
       </CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-lg border border-border bg-card p-3">
+          <div
+            key={item.label}
+            className="rounded-lg border border-border bg-card p-3"
+          >
             <div className="flex items-center gap-2">
               <div className="flex size-8 items-center justify-center rounded-md bg-primary-50 text-primary">
                 <item.icon className="size-4" />
@@ -1154,7 +1183,10 @@ function RecoveryFooter({ lang, role }: { lang: Lang; role: Role }) {
             <div className="mt-3 flex items-center justify-between gap-3 text-[11.5px] text-muted-foreground">
               <span>{item.window}</span>
               <span className="num font-semibold text-primary">
-                +{role === "staff" ? "—" : fmtMoney(item.upside, { compact: true })}
+                +
+                {role === "staff"
+                  ? "—"
+                  : fmtMoney(item.upside, { compact: true })}
               </span>
             </div>
           </div>
@@ -1253,7 +1285,10 @@ function Meter({
     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
       <div
         className="h-full rounded-full transition-[width]"
-        style={{ width: `${Math.max(0, Math.min(100, value))}%`, background: fill }}
+        style={{
+          width: `${Math.max(0, Math.min(100, value))}%`,
+          background: fill,
+        }}
       />
     </div>
   );

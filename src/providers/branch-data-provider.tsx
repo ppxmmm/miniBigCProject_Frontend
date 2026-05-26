@@ -10,17 +10,23 @@ interface BranchDataContextValue {
   data: BranchData;
   loading: boolean;
   error: string | null;
-  refetch: () => Promise<boolean>;
+  lastFetchedAt: Date | null;
+  refetch: () => void;
 }
 
 const BranchDataContext = React.createContext<BranchDataContextValue | null>(
   null,
 );
 
-export function BranchDataProvider({ children }: { children: React.ReactNode }) {
+export function BranchDataProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [data, setData] = React.useState<BranchData>(createEmptyBranchData);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = React.useState<Date | null>(null);
 
   const load = React.useCallback(async (): Promise<boolean> => {
     setLoading(true);
@@ -29,7 +35,7 @@ export function BranchDataProvider({ children }: { children: React.ReactNode }) 
     try {
       const api = await fetchDashboard();
       setData(mapDashboardToBranchData(api));
-      return true;
+      setLastFetchedAt(new Date());
     } catch (err) {
       const message =
         err instanceof ApiError
@@ -49,8 +55,8 @@ export function BranchDataProvider({ children }: { children: React.ReactNode }) 
   }, [load]);
 
   const value = React.useMemo(
-    () => ({ data, loading, error, refetch: load }),
-    [data, loading, error, load],
+    () => ({ data, loading, error, lastFetchedAt, refetch: load }),
+    [data, loading, error, lastFetchedAt, load],
   );
 
   return (
