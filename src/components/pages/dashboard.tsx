@@ -38,6 +38,7 @@ import { fmtMoney, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
+import { getTimeGreeting } from "@/lib/greeting";
 import { markHashScrollIntent } from "@/lib/hash-scroll-intent";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { alertBadgeCount, openDeliveryBadgeCount } from "@/lib/branch-data";
@@ -761,8 +762,7 @@ export function DashboardPage() {
   const d = DASH_I18N[lang];
   const isStaff = role === "staff";
   const userName = currentUser.name;
-  const greeting =
-    lang === "th" ? "สวัสดียามบ่าย" : "Good afternoon";
+  const greeting = getTimeGreeting(lang);
   const facts = buildFacts(lang, branch);
   const insights = buildInsights(lang, branch);
 
