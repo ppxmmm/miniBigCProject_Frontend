@@ -46,6 +46,17 @@ import type { Delivery, DeliveryStatus, Lang, Role } from "@/types";
 
 type Tab = "active" | "completed";
 type Tone = "warn" | "danger" | "info" | "primary";
+type DeliveryFilterStatus = DeliveryStatus | "all";
+
+type DeliveryFilters = {
+  status: DeliveryFilterStatus;
+  lateOnly: boolean;
+};
+
+const DEFAULT_DELIVERY_FILTERS: DeliveryFilters = {
+  status: "all",
+  lateOnly: false,
+};
 
 const OTIF_TARGET = 95;
 
@@ -149,6 +160,25 @@ export function DeliveryPage() {
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<Tab>("active");
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState<DeliveryFilters>(
+    DEFAULT_DELIVERY_FILTERS,
+  );
+  const [draftFilters, setDraftFilters] = React.useState<DeliveryFilters>(
+    DEFAULT_DELIVERY_FILTERS,
+  );
+
+  const hasActiveFilters =
+    filters.status !== "all" || filters.lateOnly;
+
+  const statusOptions = React.useMemo(
+    () => [
+      { value: "preparing", label: t.deliv.preparing },
+      { value: "enRoute", label: t.deliv.enRoute },
+      { value: "delivered", label: t.deliv.delivered },
+    ],
+    [t.deliv.delivered, t.deliv.enRoute, t.deliv.preparing],
+  );
 
   const deliveries = branch.deliveries;
   const storeInfo = branch.store;
@@ -172,7 +202,18 @@ export function DeliveryPage() {
   ];
   const rootCause = buildRootCause(deliveries, branch.lowStock.length);
   const drivers = buildDriverStats(deliveries);
-  const list = tab === "active" ? active : completed;
+  const list = React.useMemo(() => {
+    const base = tab === "active" ? active : completed;
+    return base.filter((delivery) => {
+      if (filters.status !== "all" && delivery.status !== filters.status) {
+        return false;
+      }
+      if (filters.lateOnly && !delivery.late) {
+        return false;
+      }
+      return true;
+    });
+  }, [active, completed, filters.lateOnly, filters.status, tab]);
   const selectedDelivery = selected
     ? deliveries.find((delivery) => delivery.id === selected)
     : null;

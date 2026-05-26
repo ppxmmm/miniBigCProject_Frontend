@@ -45,6 +45,51 @@ import type { ExpiringItem, Lang, LocalizedString } from "@/types";
 type Tab = "oos" | "expiring" | "slow";
 type Priority = "p1" | "p2" | "p3";
 
+type AlertFilters = {
+  categories: string[];
+  top30Only: boolean;
+  hideAcked: boolean;
+};
+
+const DEFAULT_ALERT_FILTERS: AlertFilters = {
+  categories: [],
+  top30Only: false,
+  hideAcked: false,
+};
+
+type FilterableAlertItem = {
+  sku: string;
+  th: string;
+  en: string;
+  cat: LocalizedString;
+  supplier?: string;
+};
+
+function categoryKey(cat: LocalizedString) {
+  return `${cat.th}-${cat.en}`;
+}
+
+function matchesAlertFilters(
+  item: FilterableAlertItem,
+  filters: AlertFilters,
+  tab: Tab,
+  acked: Set<string>,
+) {
+  if (filters.hideAcked && acked.has(item.sku)) {
+    return false;
+  }
+  if (
+    filters.categories.length > 0 &&
+    !filters.categories.includes(categoryKey(item.cat))
+  ) {
+    return false;
+  }
+  if (filters.top30Only && tab === "oos" && item.supplier !== "Top-30") {
+    return false;
+  }
+  return true;
+}
+
 interface OosItem {
   sku: string;
   th: string;
@@ -147,8 +192,28 @@ export function AlertsPage() {
 
   const slowItems = React.useMemo<SlowItem[]>(() => [], []);
 
+  const hasActiveFilters =
+    filters.categories.length > 0 || filters.top30Only || filters.hideAcked;
+
+  const categoryOptions = React.useMemo(() => {
+    const grouped = new Map<string, LocalizedString>();
+    for (const item of [...oosItems, ...expiring, ...slowItems]) {
+      const key = categoryKey(item.cat);
+      if (!grouped.has(key)) {
+        grouped.set(key, item.cat);
+      }
+    }
+    return Array.from(grouped.entries()).map(([value, cat]) => ({
+      value,
+      label: cat[lang],
+    }));
+  }, [expiring, lang, oosItems, slowItems]);
+
   const filterFn = React.useCallback(
-    (item: { sku: string; th: string; en: string }) => {
+    (item: FilterableAlertItem) => {
+      if (!matchesAlertFilters(item, filters, tab, acked)) {
+        return false;
+      }
       if (!q) return true;
       const needle = q.toLowerCase();
       return (
