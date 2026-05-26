@@ -98,15 +98,20 @@ export function RevenuePage() {
     : 0;
   const basketDelta =
     comparisonBasket > 0 ? (avgBasket - comparisonBasket) / comparisonBasket : 0;
-  const topGain = branch.topProducts
+  const uniqueProducts = branch.topProducts.filter(
+    (p, i, arr) => arr.findIndex((q) => q.sku === p.sku) === i,
+  );
+  const topGain = uniqueProducts
     .filter((product) => product.trend >= 0)
     .map(toProductMover)
     .sort((a, b) => b.lift - a.lift);
-  const topLoss = branch.topProducts
+  const topLoss = uniqueProducts
     .filter((product) => product.trend < 0)
     .map(toProductMover)
     .sort((a, b) => a.lift - b.lift);
-  const categoryPacing = branch.category.map(toCategoryPacing);
+  const categoryPacing = branch.category
+    .filter((c, i, arr) => arr.findIndex((q) => q.en === c.en) === i)
+    .map(toCategoryPacing);
   const paymentColor = (index: number) =>
     [
       "var(--primary)",
@@ -355,9 +360,11 @@ export function RevenuePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 pb-4">
-            {branch.category.map((category) => (
-              <CategoryRow key={category.en} category={category} lang={lang} />
-            ))}
+            {branch.category
+              .filter((c, i, arr) => arr.findIndex((q) => q.en === c.en) === i)
+              .map((category) => (
+                <CategoryRow key={category.en} category={category} lang={lang} />
+              ))}
           </CardContent>
         </Card>
 
@@ -382,7 +389,7 @@ export function RevenuePage() {
             <div className="space-y-3">
               {branch.payments.map((payment, index) => (
                 <div
-                  key={payment.en}
+                  key={`${branch.id}-${payment.en}-${index}`}
                   className="grid grid-cols-[12px_1fr_auto] items-center gap-3 text-[13px]"
                 >
                   <span
@@ -735,7 +742,7 @@ function CategoryTargetRow({
           className={isDrag ? "h-full bg-destructive/85" : "h-full bg-primary/85"}
           style={{ width: `${fill}%` }}
         />
-        <div className="absolute inset-y-[-2px] right-0 w-0.5 bg-foreground" />
+        <div className="absolute -inset-y-0.5 right-0 w-0.5 bg-foreground" />
       </div>
       <div className="num text-right text-[13px] font-semibold">
         {fmtMoney(category.v, { compact: true })}
