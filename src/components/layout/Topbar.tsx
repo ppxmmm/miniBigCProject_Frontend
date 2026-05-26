@@ -16,6 +16,7 @@ interface TopbarProps {
   showSearch: boolean;
   currentUser: CurrentUser;
   onOpenSidebar: () => void;
+  right?: React.ReactNode;
 }
 
 export function Topbar({
@@ -24,6 +25,7 @@ export function Topbar({
   showSearch,
   currentUser,
   onOpenSidebar,
+  right,
 }: TopbarProps) {
   const tx = getT(lang);
   const { resolvedTheme, setTheme } = useTheme();
@@ -52,6 +54,7 @@ export function Topbar({
       <div className="flex-1 md:hidden" />
 
       <div className="ml-auto flex items-center gap-1.5">
+        {right}
         <Button size="sm" variant="ghost" onClick={toggleLang} title="Language">
           <Globe />
           <span className="font-mono text-[11px] uppercase">{lang}</span>
