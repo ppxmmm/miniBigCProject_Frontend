@@ -1,3 +1,4 @@
+import { RequireAuth } from "@/components/auth/route-guard";
 import { AppShell } from "@/components/layout/app-shell";
 import { BranchDataProvider } from "@/providers/branch-data-provider";
 
@@ -7,8 +8,10 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <BranchDataProvider>
-      <AppShell>{children}</AppShell>
-    </BranchDataProvider>
+    <RequireAuth>
+      <BranchDataProvider>
+        <AppShell>{children}</AppShell>
+      </BranchDataProvider>
+    </RequireAuth>
   );
 }

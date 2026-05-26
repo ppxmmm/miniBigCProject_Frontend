@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { getT } from "@/lib/i18n";
+import { clearAuthRole, readAuthRole, writeAuthRole } from "@/lib/auth-session";
 import { getUserProfile } from "@/lib/user-data";
 import type { CurrentUser, Lang, Role } from "@/types";
 
@@ -12,8 +13,11 @@ interface AppShellContextValue {
   lang: Lang;
   role: Role;
   currentUser: CurrentUser;
+  authReady: boolean;
+  isAuthenticated: boolean;
   toggleLang: () => void;
   loginAs: (role: Role) => void;
+  logout: () => void;
 }
 
 const AppShellContext = React.createContext<AppShellContextValue | null>(null);
@@ -21,6 +25,17 @@ const AppShellContext = React.createContext<AppShellContextValue | null>(null);
 export function AppShellProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = React.useState<Lang>("th");
   const [role, setRole] = React.useState<Role>("manager");
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [authReady, setAuthReady] = React.useState(false);
+
+  React.useEffect(() => {
+    const stored = readAuthRole();
+    if (stored) {
+      setRole(stored);
+      setIsAuthenticated(true);
+    }
+    setAuthReady(true);
+  }, []);
 
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
@@ -39,12 +54,37 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loginAs = React.useCallback((nextRole: Role) => {
+    writeAuthRole(nextRole);
     setRole(nextRole);
+    setIsAuthenticated(true);
+  }, []);
+
+  const logout = React.useCallback(() => {
+    clearAuthRole();
+    setIsAuthenticated(false);
   }, []);
 
   const value = React.useMemo(
-    () => ({ lang, role, currentUser, toggleLang, loginAs }),
-    [lang, role, currentUser, toggleLang, loginAs],
+    () => ({
+      lang,
+      role,
+      currentUser,
+      authReady,
+      isAuthenticated,
+      toggleLang,
+      loginAs,
+      logout,
+    }),
+    [
+      lang,
+      role,
+      currentUser,
+      authReady,
+      isAuthenticated,
+      toggleLang,
+      loginAs,
+      logout,
+    ],
   );
 
   return (
@@ -63,7 +103,7 @@ export function useAppShell() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { lang, role, currentUser, toggleLang } = useAppShell();
+  const { lang, role, currentUser, toggleLang, logout } = useAppShell();
   const [sbOpen, setSbOpen] = React.useState(false);
   const [sbCollapsed, setSbCollapsed] = React.useState(false);
 
@@ -78,7 +118,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         sbCollapsed={sbCollapsed}
         setSbCollapsed={setSbCollapsed}
         currentUser={currentUser}
-        onSignOut={() => router.push("/login")}
+        onSignOut={() => {
+          logout();
+          router.replace("/login");
+        }}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">

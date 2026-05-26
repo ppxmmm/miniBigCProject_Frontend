@@ -62,7 +62,7 @@ export function LoginPage() {
     setTimeout(() => {
       loginAs(account.role);
       setBusy(false);
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }, 600);
   };
 
