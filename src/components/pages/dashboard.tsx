@@ -770,7 +770,7 @@ export function DashboardPage() {
       const [route, sectionId] = target.split(":") as [RouteKey, string];
       const pathname = route === "delivery" ? "/deliveries" : `/${route}`;
 
-      router.push(`${pathname}#${sectionId}`);
+      router.push(`${pathname}#${sectionId}`, { scroll: false });
     },
     [router],
   );

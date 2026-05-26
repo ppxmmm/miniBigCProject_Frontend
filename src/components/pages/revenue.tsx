@@ -73,7 +73,7 @@ export function RevenuePage() {
   const snapshot = getRevenueSnapshot(branch, range);
   const hasRenderableData = hasRevenueData && snapshot.actual.length > 0;
 
-  useHashScroll(role !== "staff" && hasRenderableData);
+  useHashScroll(role !== "staff");
 
   if (role === "staff")
     return (

@@ -255,6 +255,22 @@
     }
   }
 
+  /* Facts tile deep-link: soft highlight after smooth scroll */
+  .hash-scroll-highlight {
+    animation: hashScrollTarget 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes hashScrollTarget {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
+    }
+    22% {
+      box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 32%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
+    }
+  }
+
   /* Placeholder map background */
   .map-bg {
     background: linear-gradient(
