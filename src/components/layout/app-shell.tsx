@@ -85,7 +85,16 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
       loginAs,
       logout,
     }),
-    [lang, role, currentUser, authReady, isAuthenticated, toggleLang, loginAs, logout],
+    [
+      lang,
+      role,
+      currentUser,
+      authReady,
+      isAuthenticated,
+      toggleLang,
+      loginAs,
+      logout,
+    ],
   );
 
   return (
