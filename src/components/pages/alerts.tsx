@@ -21,6 +21,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  FilterChipGroup,
+  FilterDialog,
+  FilterToggle,
+} from "@/components/filter-dialog";
 import { Empty, PageHeader } from "@/components/page-helpers";
 import { fmtD, fmtMoney, daysBetween } from "@/lib/format";
 import { getT } from "@/lib/i18n";
@@ -185,6 +190,18 @@ const SLOW_ITEMS: SlowItem[] = [
   },
 ];
 
+type AlertFilters = {
+  top30Only: boolean;
+  hideAcked: boolean;
+  categories: string[];
+};
+
+const DEFAULT_ALERT_FILTERS: AlertFilters = {
+  top30Only: false,
+  hideAcked: false,
+  categories: [],
+};
+
 const SHRINK_BY_CATEGORY = [
   { th: "อาหารแช่แข็ง", en: "Frozen", v: 12400, color: "var(--destructive)" },
   { th: "ผัก-ผลไม้", en: "Produce", v: 9800, color: "oklch(0.62 0.16 35)" },
@@ -201,6 +218,10 @@ export function AlertsPage() {
   const [tab, setTab] = React.useState<Tab>("oos");
   const [q, setQ] = React.useState("");
   const [acked, setAcked] = React.useState<Set<string>>(new Set());
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState<AlertFilters>(DEFAULT_ALERT_FILTERS);
+  const [draftFilters, setDraftFilters] =
+    React.useState<AlertFilters>(DEFAULT_ALERT_FILTERS);
 
   const expiring = React.useMemo<ExpiringActionItem[]>(
     () =>
@@ -222,20 +243,48 @@ export function AlertsPage() {
     return backendLow.length > 0 ? backendLow : OOS_ITEMS;
   }, [branch.lowStock]);
 
-  const filterFn = React.useCallback(
-    (item: { sku: string; th: string; en: string }) => {
+  const categoryOptions = React.useMemo(() => {
+    const map = new Map<string, LocalizedString>();
+    for (const item of [...oosItems, ...expiring, ...SLOW_ITEMS]) {
+      map.set(item.cat.en, item.cat);
+    }
+    return [...map.entries()]
+      .map(([value, cat]) => ({ value, label: cat[lang] }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }, [expiring, lang, oosItems]);
+
+  const matchesFilters = React.useCallback(
+    (item: { sku: string; th: string; en: string; cat: LocalizedString; supplier?: string }) => {
+      if (filters.hideAcked && acked.has(item.sku)) return false;
+      if (
+        filters.categories.length > 0 &&
+        !filters.categories.includes(item.cat.en)
+      ) {
+        return false;
+      }
+      if (filters.top30Only && tab === "oos" && item.supplier !== "Top-30") {
+        return false;
+      }
       if (!q) return true;
       const needle = q.toLowerCase();
-      return item[lang].toLowerCase().includes(needle) || item.sku.toLowerCase().includes(needle);
+      return (
+        item[lang].toLowerCase().includes(needle) ||
+        item.sku.toLowerCase().includes(needle)
+      );
     },
-    [lang, q],
+    [acked, filters, lang, q, tab],
   );
 
   const filtered = {
-    oos: oosItems.filter(filterFn),
-    expiring: expiring.filter(filterFn),
-    slow: SLOW_ITEMS.filter(filterFn),
+    oos: oosItems.filter(matchesFilters),
+    expiring: expiring.filter(matchesFilters),
+    slow: SLOW_ITEMS.filter(matchesFilters),
   };
+
+  const hasActiveFilters =
+    filters.top30Only ||
+    filters.hideAcked ||
+    filters.categories.length > 0;
 
   const osa = 91.6;
   const osaTarget = 95;
@@ -262,10 +311,6 @@ export function AlertsPage() {
         }
         right={
           <>
-            <Button size="sm" variant="outline">
-              <Filter />
-              {t.common.filter}
-            </Button>
             <Button size="sm" variant="outline">
               <Download />
               {t.common.export}
@@ -407,30 +452,88 @@ export function AlertsPage() {
         title={isTh ? "รายการที่ต้องดำเนินการ" : "Items needing action"}
         sub={isTh ? "เลือก SKU เพื่อกำหนดแผนกู้ยอด" : "Select SKUs to add to recovery actions"}
         right={
-          <div className="relative w-full sm:w-60">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="h-8 pl-8 text-[12.5px]"
-              placeholder={t.common.search}
-              value={q}
-              onChange={(event) => setQ(event.target.value)}
-            />
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
+            <Button
+              size="sm"
+              variant={hasActiveFilters ? "secondary" : "outline"}
+              onClick={() => {
+                setDraftFilters(filters);
+                setFilterOpen(true);
+              }}
+            >
+              <Filter />
+              {t.common.filter}
+              {hasActiveFilters && (
+                <span className="ml-1 size-1.5 rounded-full bg-primary" />
+              )}
+            </Button>
+            <div className="relative w-full sm:w-60">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="h-8 pl-8 text-[12.5px]"
+                placeholder={t.common.search}
+                value={q}
+                onChange={(event) => setQ(event.target.value)}
+              />
+            </div>
           </div>
         }
       />
+
+      <FilterDialog
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        lang={lang}
+        title={t.common.filter}
+        onApply={() => setFilters(draftFilters)}
+        onReset={() => {
+          setDraftFilters(DEFAULT_ALERT_FILTERS);
+          setFilters(DEFAULT_ALERT_FILTERS);
+        }}
+      >
+        <FilterChipGroup
+          label={t.alert.category}
+          options={categoryOptions}
+          selected={draftFilters.categories}
+          onChange={(categories) =>
+            setDraftFilters((current) => ({ ...current, categories }))
+          }
+        />
+        <FilterToggle
+          id="alert-top30"
+          label={isTh ? "เฉพาะ Top-30" : "Top-30 SKUs only"}
+          description={
+            isTh
+              ? "ใช้กับแท็บหมด/ต่ำเร่งด่วน"
+              : "Applies on the OOS critical tab"
+          }
+          checked={draftFilters.top30Only}
+          onCheckedChange={(top30Only) =>
+            setDraftFilters((current) => ({ ...current, top30Only }))
+          }
+        />
+        <FilterToggle
+          id="alert-hide-acked"
+          label={isTh ? "ซ่อนรายการในแผนแล้ว" : "Hide items in recovery plan"}
+          checked={draftFilters.hideAcked}
+          onCheckedChange={(hideAcked) =>
+            setDraftFilters((current) => ({ ...current, hideAcked }))
+          }
+        />
+      </FilterDialog>
 
       <Card className="gap-0 overflow-hidden rounded-[10px] py-0 shadow-none">
         <div className="px-4.5 py-3">
           <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
             <TabsList className="h-auto flex-wrap">
               <TabsTrigger value="oos">
-                {isTh ? "หมด/ต่ำเร่งด่วน" : "OOS critical"} · {oosItems.length}
+                {isTh ? "หมด/ต่ำเร่งด่วน" : "OOS critical"} · {filtered.oos.length}
               </TabsTrigger>
               <TabsTrigger value="expiring">
-                {isTh ? "ใกล้หมดอายุ" : "Near expiry"} · {expiring.length}
+                {isTh ? "ใกล้หมดอายุ" : "Near expiry"} · {filtered.expiring.length}
               </TabsTrigger>
               <TabsTrigger value="slow">
-                {isTh ? "ค้างสต็อก" : "Slow movers"} · {SLOW_ITEMS.length}
+                {isTh ? "ค้างสต็อก" : "Slow movers"} · {filtered.slow.length}
               </TabsTrigger>
             </TabsList>
           </Tabs>

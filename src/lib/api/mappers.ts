@@ -59,6 +59,7 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
     }));
 
   return {
+    id: store.id,
     store: {
       code: store.code,
       name: { th: store.name_th, en: store.name_en },

@@ -28,6 +28,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import {
+  FilterChipGroup,
+  FilterDialog,
+  FilterToggle,
+} from "@/components/filter-dialog";
 import { PageHeader } from "@/components/page-helpers";
 import { Sparkline } from "@/components/charts/sparkline";
 import { useAppShell } from "@/components/layout/app-shell";
@@ -40,6 +45,16 @@ import type { Delivery, DeliveryStatus, Lang, Role } from "@/types";
 
 type Tab = "active" | "completed";
 type Tone = "warn" | "danger" | "info" | "primary";
+
+type DeliveryFilters = {
+  lateOnly: boolean;
+  status: DeliveryStatus | "all";
+};
+
+const DEFAULT_DELIVERY_FILTERS: DeliveryFilters = {
+  lateOnly: false,
+  status: "all",
+};
 
 const OTIF = 87.3;
 const OTIF_TARGET = 95;
@@ -185,6 +200,13 @@ export function DeliveryPage() {
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<Tab>("active");
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [filterOpen, setFilterOpen] = React.useState(false);
+  const [filters, setFilters] = React.useState<DeliveryFilters>(
+    DEFAULT_DELIVERY_FILTERS,
+  );
+  const [draftFilters, setDraftFilters] = React.useState<DeliveryFilters>(
+    DEFAULT_DELIVERY_FILTERS,
+  );
 
   const deliveries =
     branch.deliveries.length > 0 ? branch.deliveries : FALLBACK_DELIVERIES;
@@ -196,7 +218,28 @@ export function DeliveryPage() {
   const completed = deliveries.filter(
     (delivery) => delivery.status === "delivered",
   );
-  const list = tab === "active" ? active : completed;
+  const list = React.useMemo(() => {
+    const base = tab === "active" ? active : completed;
+    return base.filter((delivery) => {
+      if (filters.lateOnly && !delivery.late) return false;
+      if (filters.status !== "all" && delivery.status !== filters.status) {
+        return false;
+      }
+      return true;
+    });
+  }, [active, completed, filters, tab]);
+
+  const hasActiveFilters =
+    filters.lateOnly || filters.status !== "all";
+
+  const statusOptions = React.useMemo(
+    () => [
+      { value: "preparing", label: t.deliv.preparing },
+      { value: "enRoute", label: t.deliv.enRoute },
+      { value: "delivered", label: t.deliv.delivered },
+    ],
+    [t],
+  );
   const selectedDelivery = selected
     ? deliveries.find((delivery) => delivery.id === selected)
     : null;
@@ -214,10 +257,6 @@ export function DeliveryPage() {
         }
         right={
           <>
-            <Button size="sm" variant="outline">
-              <Filter />
-              {t.common.filter}
-            </Button>
             <Button size="sm" variant="outline" onClick={refetch}>
               <RotateCcw />
               {t.common.refresh}
@@ -419,7 +458,7 @@ export function DeliveryPage() {
         </Card>
 
         <Card className="gap-0 overflow-hidden rounded-[10px] py-0 shadow-none">
-          <div className="p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 p-4">
             <div className="inline-flex h-8 w-fit items-center justify-center gap-0.5 rounded-lg bg-muted p-0.75 text-muted-foreground">
               <button
                 type="button"
@@ -431,7 +470,8 @@ export function DeliveryPage() {
                     : "text-foreground/60 hover:text-foreground",
                 )}
               >
-                {t.deliv.active} · {active.length}
+                {t.deliv.active} ·{" "}
+                {tab === "active" ? list.length : active.length}
               </button>
               <button
                 type="button"
@@ -443,10 +483,67 @@ export function DeliveryPage() {
                     : "text-foreground/60 hover:text-foreground",
                 )}
               >
-                {t.deliv.completed} · {completed.length}
+                {t.deliv.completed} ·{" "}
+                {tab === "completed" ? list.length : completed.length}
               </button>
             </div>
+            <Button
+              size="sm"
+              variant={hasActiveFilters ? "secondary" : "outline"}
+              onClick={() => {
+                setDraftFilters(filters);
+                setFilterOpen(true);
+              }}
+            >
+              <Filter />
+              {t.common.filter}
+              {hasActiveFilters && (
+                <span className="ml-1 size-1.5 rounded-full bg-primary" />
+              )}
+            </Button>
           </div>
+          <FilterDialog
+            open={filterOpen}
+            onOpenChange={setFilterOpen}
+            lang={lang}
+            title={t.common.filter}
+            onApply={() => setFilters(draftFilters)}
+            onReset={() => {
+              setDraftFilters(DEFAULT_DELIVERY_FILTERS);
+              setFilters(DEFAULT_DELIVERY_FILTERS);
+            }}
+          >
+            <FilterChipGroup
+              mode="single"
+              label={t.deliv.status}
+              options={statusOptions}
+              selected={
+                draftFilters.status === "all" ? [] : [draftFilters.status]
+              }
+              onChange={(selected) =>
+                setDraftFilters((current) => ({
+                  ...current,
+                  status:
+                    selected.length === 0
+                      ? "all"
+                      : (selected[0] as DeliveryStatus),
+                }))
+              }
+            />
+            <FilterToggle
+              id="delivery-late"
+              label={t.deliv.late}
+              description={
+                isTh
+                  ? "แสดงเฉพาะออเดอร์ที่ล่าช้า"
+                  : "Show only late deliveries"
+              }
+              checked={draftFilters.lateOnly}
+              onCheckedChange={(lateOnly) =>
+                setDraftFilters((current) => ({ ...current, lateOnly }))
+              }
+            />
+          </FilterDialog>
           <Separator />
           <div className="max-h-105 overflow-y-auto text-[13px]">
             {list.map((delivery) => (
