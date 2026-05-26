@@ -890,6 +890,7 @@ export function DashboardPage() {
   const router = useRouter();
   const { lang, role, currentUser } = useAppShell();
   const { data: branch, lastFetchedAt, refetch } = useBranchData();
+  const { refresh, loading: refreshing } = useBranchRefresh();
   const t = getT(lang);
   const d = DASH_I18N[lang];
   const isStaff = role === "staff";
@@ -898,9 +899,8 @@ export function DashboardPage() {
   const facts = buildFacts(lang, branch);
   const insights = buildInsights(lang, branch);
 
-  const handleRefresh = React.useCallback(async () => {
-    const ok = await refresh();
-    if (ok) setLastUpdated(new Date());
+  const handleRefresh = React.useCallback(() => {
+    void refresh();
   }, [refresh]);
 
   const openRoute = React.useCallback(
