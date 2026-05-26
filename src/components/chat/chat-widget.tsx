@@ -190,8 +190,8 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
             id: `e-${Date.now()}`,
             role: "assistant",
             content: isTh
-              ? "ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบการตั้งค่า ANTHROPIC_API_KEY"
-              : "Cannot connect. Please check that ANTHROPIC_API_KEY is set.",
+              ? "ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบการตั้งค่า Google AI Studio API key"
+              : "Cannot connect. Please check that your Google AI Studio API key is set.",
             error: true,
           },
         ]);
