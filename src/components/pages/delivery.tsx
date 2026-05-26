@@ -420,12 +420,12 @@ export function DeliveryPage() {
 
         <Card className="gap-0 overflow-hidden rounded-[10px] py-0 shadow-none">
           <div className="p-4">
-            <div className="inline-flex h-8 w-fit items-center justify-center gap-0.5 rounded-lg bg-muted p-[3px] text-muted-foreground">
+            <div className="inline-flex h-8 w-fit items-center justify-center gap-0.5 rounded-lg bg-muted p-0.75 text-muted-foreground">
               <button
                 type="button"
                 onClick={() => setTab("active")}
                 className={cn(
-                  "inline-flex h-[25px] items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
+                  "inline-flex h-6.25 items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
                   tab === "active"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-foreground/60 hover:text-foreground",
@@ -437,7 +437,7 @@ export function DeliveryPage() {
                 type="button"
                 onClick={() => setTab("completed")}
                 className={cn(
-                  "inline-flex h-[25px] items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
+                  "inline-flex h-6.25 items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap transition-colors",
                   tab === "completed"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-foreground/60 hover:text-foreground",
@@ -448,7 +448,7 @@ export function DeliveryPage() {
             </div>
           </div>
           <Separator />
-          <div className="max-h-[420px] overflow-y-auto text-[13px]">
+          <div className="max-h-105 overflow-y-auto text-[13px]">
             {list.map((delivery) => (
               <DeliveryRow
                 key={delivery.id}
@@ -506,7 +506,7 @@ function DeliveryRow({
             delivery.status === "preparing" && "bg-muted text-muted-foreground",
             delivery.status === "enRoute" &&
               delivery.late &&
-              "bg-warn-50 text-[color:oklch(0.45_0.13_70)]",
+              "bg-warn-50 text-[oklch(0.45_0.13_70)]",
             delivery.status === "enRoute" &&
               !delivery.late &&
               "bg-info-50 text-info",
@@ -798,7 +798,7 @@ function DeliveryMap({
           );
         })}
       </svg>
-      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-[180%] items-center gap-1 whitespace-nowrap rounded-md border border-border-strong bg-card px-2 py-1 text-[11px] font-semibold shadow-sm">
+      <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 translate-y-[-180%] items-center gap-1 whitespace-nowrap rounded-md border border-border-strong bg-card px-2 py-1 text-[11px] font-semibold shadow-sm">
         <Store className="size-3 text-primary" />
         {storeLabel}
       </div>
@@ -1100,7 +1100,7 @@ function StatusBadge({ delivery, lang }: { delivery: Delivery; lang: Lang }) {
         className={cn(
           "gap-1",
           delivery.late
-            ? "bg-warn-50 text-[color:oklch(0.45_0.13_70)]"
+            ? "bg-warn-50 text-[oklch(0.45_0.13_70)]"
             : "bg-info-50 text-info",
         )}
       >
