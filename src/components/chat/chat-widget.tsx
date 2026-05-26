@@ -10,45 +10,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
-import { useBranchData } from "@/providers/branch-data-provider";
-import type { BranchData } from "@/lib/branch-data";
-import { alertBadgeCount, openDeliveryBadgeCount } from "@/lib/branch-data";
-import { fmtMoney, fmtPct } from "@/lib/format";
+import { askDonjai } from "@/lib/api/chat";
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   error?: boolean;
-}
-
-function buildBranchContext(branch: BranchData, lang: "th" | "en"): string {
-  const isTh = lang === "th";
-  const todayRevenue = branch.hourly.reduce((s, v) => s + v, 0);
-  const yesterdayRevenue = branch.hourlyYest.reduce((s, v) => s + v, 0);
-  const dailyRevenue = branch.daily.reduce((s, v) => s + v, 0);
-  const dailyLast = branch.dailyLast.reduce((s, v) => s + v, 0);
-  const alertTotal = alertBadgeCount(branch);
-  const openDeliveries = openDeliveryBadgeCount(branch);
-  const lateDeliveries = branch.deliveries.filter((d) => d.late).length;
-
-  const lines = [
-    `Store: ${branch.store.name.en} (${branch.store.code})`,
-    `Manager: ${branch.store.manager.en}`,
-    `Today revenue: ${fmtMoney(todayRevenue)} (${fmtPct((todayRevenue - yesterdayRevenue) / Math.max(yesterdayRevenue, 1), { sign: true })} vs yesterday)`,
-    `Daily MTD revenue: ${fmtMoney(dailyRevenue)} (${fmtPct((dailyRevenue - dailyLast) / Math.max(dailyLast, 1), { sign: true })} vs last period)`,
-    `Active alerts: ${alertTotal} (${branch.expiring.length} near-expiry, ${branch.lowStock.length} low-stock)`,
-    `Deliveries: ${branch.deliveries.length} total, ${openDeliveries} open, ${lateDeliveries} late`,
-    branch.topProducts.length > 0
-      ? `Top product: ${branch.topProducts[0][lang]} (${fmtMoney(branch.topProducts[0].value)})`
-      : "Top product: no data",
-    branch.promos.length > 0
-      ? `Active promos: ${branch.promos.length}`
-      : "Active promos: none",
-    `Language preference: ${isTh ? "Thai" : "English"}`,
-  ];
-
-  return lines.join("\n");
 }
 
 const SUGGESTED: Record<"th" | "en", string[]> = {
@@ -106,9 +74,27 @@ function AssistantAvatar() {
   );
 }
 
+function formatChatError(message: string, isTh: boolean): string {
+  if (message.includes("GEMINI_API_KEY")) {
+    return isTh
+      ? "เซิร์ฟเวอร์ยังไม่ได้ตั้งค่า GEMINI_API_KEY ในไฟล์ .env ของ backend — ให้เพิ่น API key จาก Google AI Studio แล้วรีสตาร์ท Go server"
+      : "Backend is missing GEMINI_API_KEY in .env — add your Google AI Studio key and restart the Go server.";
+  }
+  if (message.includes("AI service unavailable")) {
+    return isTh
+      ? "บริการ AI ไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่ภายหลัง"
+      : "AI service is temporarily unavailable. Please try again later.";
+  }
+  if (message.toLowerCase().includes("fetch") || message.includes("Failed to fetch")) {
+    return isTh
+      ? "เชื่อมต่อ backend ไม่ได้ — ตรวจสอบว่า Go server รันอยู่ที่พอร์ต 5001"
+      : "Cannot reach the backend — make sure the Go server is running on port 5001.";
+  }
+  return message;
+}
+
 function ChatPanel({ onClose }: { onClose: () => void }) {
-  const { lang } = useAppShell();
-  const { data: branch } = useBranchData();
+  const { lang, role } = useAppShell();
   const isTh = lang === "th";
 
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
@@ -143,55 +129,24 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
       setLoading(true);
 
       try {
-        const history = [...messages, userMsg].map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
-
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: history,
-            systemContext: buildBranchContext(branch, lang),
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || data.error) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `e-${Date.now()}`,
-              role: "assistant",
-              content:
-                data.error ??
-                (isTh
-                  ? "เกิดข้อผิดพลาด กรุณาลองใหม่"
-                  : "Something went wrong. Please try again."),
-              error: true,
-            },
-          ]);
-        } else {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: `a-${Date.now()}`,
-              role: "assistant",
-              content: data.content,
-            },
-          ]);
-        }
-      } catch {
+        const { reply } = await askDonjai(trimmed, role);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content: reply,
+          },
+        ]);
+      } catch (err) {
+        const raw =
+          err instanceof Error ? err.message : isTh ? "เกิดข้อผิดพลาด" : "Something went wrong";
         setMessages((prev) => [
           ...prev,
           {
             id: `e-${Date.now()}`,
             role: "assistant",
-            content: isTh
-              ? "ไม่สามารถเชื่อมต่อได้ กรุณาตรวจสอบการตั้งค่า Google AI Studio API key"
-              : "Cannot connect. Please check that your Google AI Studio API key is set.",
+            content: formatChatError(raw, isTh),
             error: true,
           },
         ]);
@@ -200,7 +155,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
         inputRef.current?.focus();
       }
     },
-    [branch, lang, loading, messages, isTh],
+    [lang, loading, messages, role, isTh],
   );
 
   const handleKeyDown = React.useCallback(
