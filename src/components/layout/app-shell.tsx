@@ -4,6 +4,7 @@ import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/Topbar";
+import { ChatWidget } from "@/components/chat/chat-widget";
 import { getT } from "@/lib/i18n";
 import { clearAuthRole, readAuthRole, writeAuthRole } from "@/lib/auth-session";
 import { getUserProfile } from "@/lib/user-data";
@@ -75,16 +76,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
       loginAs,
       logout,
     }),
-    [
-      lang,
-      role,
-      currentUser,
-      authReady,
-      isAuthenticated,
-      toggleLang,
-      loginAs,
-      logout,
-    ],
+    [lang, role, currentUser, authReady, isAuthenticated, toggleLang, loginAs, logout],
   );
 
   return (
@@ -135,6 +127,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 max-w-full p-3.5 md:p-5.5">{children}</main>
       </div>
+
+      <ChatWidget />
     </div>
   );
 }
