@@ -27,6 +27,7 @@ import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchData } from "@/providers/branch-data-provider";
+import { useHashScroll } from "@/hooks/use-hash-scroll";
 import type { ExpiringItem, Lang, LocalizedString } from "@/types";
 
 type Tab = "oos" | "expiring" | "slow";
@@ -243,6 +244,8 @@ export function AlertsPage() {
   const lostSales = oosItems.reduce((sum, item) => sum + item.lostSales, 0);
   const storeName = branch.store.short[lang] || (isTh ? "สาขาพระราม 9" : "Rama 9 branch");
 
+  useHashScroll();
+
   const ack = (sku: string) => {
     setAcked((current) => new Set([...current, sku]));
     toast.success(isTh ? `เพิ่ม ${sku} เข้าแผนกู้ยอด` : `Added ${sku} to recovery plan`);
@@ -288,11 +291,13 @@ export function AlertsPage() {
         metricLabel="OSA"
       />
 
-      <SectionHeader
-        idx="01"
-        title={isTh ? "สถานะหลัก" : "Health snapshot"}
-        sub={isTh ? "ดู scale ของปัญหาก่อนเริ่ม action" : "Frame the scale before acting"}
-      />
+      <section id="stock-availability" className="scroll-mt-20">
+        <SectionHeader
+          idx="01"
+          title={isTh ? "สถานะหลัก" : "Health snapshot"}
+          sub={isTh ? "ดู scale ของปัญหาก่อนเริ่ม action" : "Frame the scale before acting"}
+        />
+      </section>
 
       <div className="mb-3.5 grid gap-3.5 xl:grid-cols-[1.1fr_1fr_1fr]">
         <Card className="rounded-[10px] shadow-none">
@@ -322,7 +327,7 @@ export function AlertsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[10px] shadow-none">
+        <Card id="loss-oos" className="scroll-mt-20 rounded-[10px] shadow-none">
           <CardContent className="p-4.5">
             <div className="flex items-center gap-3">
               <div className="flex size-11 items-center justify-center rounded-[10px] bg-destructive/10 text-destructive">
@@ -357,7 +362,7 @@ export function AlertsPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-[10px] shadow-none">
+        <Card id="inventory-aging-shrinkage" className="scroll-mt-20 rounded-[10px] shadow-none">
           <CardContent className="p-4.5">
             <div className="flex items-center gap-3">
               <div className="flex size-11 items-center justify-center rounded-[10px] bg-warn-50 text-[color:oklch(0.45_0.13_70)]">

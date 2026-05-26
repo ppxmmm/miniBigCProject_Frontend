@@ -35,6 +35,7 @@ import { useBranchData } from "@/providers/branch-data-provider";
 import { fmtMoney } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useHashScroll } from "@/hooks/use-hash-scroll";
 import type { Delivery, DeliveryStatus, Lang, Role } from "@/types";
 
 type Tab = "active" | "completed";
@@ -200,6 +201,8 @@ export function DeliveryPage() {
     ? deliveries.find((delivery) => delivery.id === selected)
     : null;
 
+  useHashScroll();
+
   return (
     <div className="fade-in" data-screen-label="Delivery">
       <PageHeader
@@ -223,19 +226,21 @@ export function DeliveryPage() {
         }
       />
 
-      <CrisisContextStrip
-        lang={lang}
-        factsTileNo="04"
-        factsTileName="OSX Sales & %OTIF"
-        headline={
-          isTh
-            ? `OTIF ลดจาก ${OTIF_LAST}% เหลือ ${OTIF}% — เหตุหลักคือ OOS ตัดออร์เดอร์`
-            : `OTIF dropped from ${OTIF_LAST}% to ${OTIF}% — primarily from OOS cuts`
-        }
-        metric={`${OTIF.toFixed(1)}%`}
-        metricLabel="OTIF"
-        tone="warn"
-      />
+      <section id="osx-sales-otif" className="scroll-mt-20">
+        <CrisisContextStrip
+          lang={lang}
+          factsTileNo="04"
+          factsTileName="OSX Sales & %OTIF"
+          headline={
+            isTh
+              ? `OTIF ลดจาก ${OTIF_LAST}% เหลือ ${OTIF}% — เหตุหลักคือ OOS ตัดออร์เดอร์`
+              : `OTIF dropped from ${OTIF_LAST}% to ${OTIF}% — primarily from OOS cuts`
+          }
+          metric={`${OTIF.toFixed(1)}%`}
+          metricLabel="OTIF"
+          tone="warn"
+        />
+      </section>
 
       <SectionHeader
         idx="01"

@@ -45,6 +45,7 @@ import type { Lang } from "@/types";
 
 type Status = "ready" | "inProgress" | "pending";
 type RouteKey = "revenue" | "alerts" | "delivery";
+type DashboardTarget = `${RouteKey}:${string}`;
 
 const DASH_I18N = {
   th: {
@@ -98,7 +99,7 @@ const DASH_I18N = {
 interface Fact {
   key: string;
   icon: LucideIcon;
-  goto: RouteKey;
+  goto: DashboardTarget;
   ai?: boolean;
   title: string;
   sub: string;
@@ -159,7 +160,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "perfHighlight",
       icon: Sparkles,
-      goto: "revenue",
+      goto: "revenue:performance-highlight",
       ai: true,
       title: "Performance Highlight",
       sub: isTh ? "สรุป Executive โดย AI Donjai" : "Executive summary (AI Donjai)",
@@ -171,7 +172,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "salesMtdYtd",
       icon: TrendingUp,
-      goto: "revenue",
+      goto: "revenue:sales-mtd-ytd",
       title: "Sales MTD / YTD (OMNI view)",
       sub: isTh ? "ยอดขายในร้าน + ออนไลน์" : "In-store + online combined",
       stat: fmtMoney(mtdRevenue, { compact: true }),
@@ -183,7 +184,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "customerKpi",
       icon: User,
-      goto: "revenue",
+      goto: "revenue:customer-sales-kpis",
       title: isTh ? "Customer Sales & KPIs" : "Customer sales & KPIs",
       sub: isTh ? "ยอดต่อบิล · ลูกค้าใหม่ · กลับมาซื้อ" : "Basket · new · repeat customers",
       stat: fmtMoney(todayRevenue / Math.max(branch.deliveries.length, 1)),
@@ -194,7 +195,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "osxOtif",
       icon: Truck,
-      goto: "delivery",
+      goto: "delivery:osx-sales-otif",
       title: "OSX Sales & %OTIF",
       sub: isTh ? "ปฏิบัติการ & การจัดส่งครบถ้วน" : "Operation & Fulfillment",
       stat: String(openDeliveries),
@@ -207,7 +208,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "inventory",
       icon: Package,
-      goto: "alerts",
+      goto: "alerts:inventory-aging-shrinkage",
       title: "Inventory, Aging & Shrinkage",
       sub: isTh ? "อายุสินค้า · สูญเสีย · ค้างสต็อก" : "Aging · shrink · slow movers",
       stat: fmtMoney(expiringValue, { compact: true }),
@@ -220,7 +221,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "lossOos",
       icon: AlertTriangle,
-      goto: "alerts",
+      goto: "alerts:loss-oos",
       title: "Loss & OOS",
       sub: isTh ? "ของขาด · ของหมด · ของเสีย" : "Out of stock & shrinkage value",
       stat: String(alertCount),
@@ -233,7 +234,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "stockAvail",
       icon: Check,
-      goto: "alerts",
+      goto: "alerts:stock-availability",
       title: isTh ? "Stock Availability" : "Stock availability",
       sub: isTh ? "% สินค้าที่มีของบนชั้น" : "% on-shelf availability",
       stat: fmtPct(stockAvailability),
@@ -246,7 +247,7 @@ function buildFacts(lang: Lang, branch: BranchData): Fact[] {
     {
       key: "top30",
       icon: Flame,
-      goto: "revenue",
+      goto: "revenue:top-30-gain-loss",
       title: isTh ? "Top 30 Items — Gain & Loss" : "Top 30 items — Gain & Loss",
       sub: isTh ? "สินค้าหลักที่ขับยอดและฉุดยอด" : "Hero SKUs driving / dragging sales",
       stat: topProduct ? fmtMoney(topProduct.value, { compact: true }) : fmtMoney(categoryTotal, { compact: true }),
@@ -459,7 +460,7 @@ function FactTile({
   fact: Fact;
   lang: Lang;
   isStaff: boolean;
-  onOpen: (route: RouteKey) => void;
+  onOpen: (target: DashboardTarget) => void;
 }) {
   const d = DASH_I18N[lang];
   const Icon = fact.icon;
@@ -765,8 +766,11 @@ export function DashboardPage() {
   const insights = buildInsights(lang, branch);
 
   const openRoute = React.useCallback(
-    (route: RouteKey) => {
-      router.push(route === "delivery" ? "/deliveries" : `/${route}`);
+    (target: DashboardTarget) => {
+      const [route, sectionId] = target.split(":") as [RouteKey, string];
+      const pathname = route === "delivery" ? "/deliveries" : `/${route}`;
+
+      router.push(`${pathname}#${sectionId}`);
     },
     [router],
   );

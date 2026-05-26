@@ -42,6 +42,7 @@ import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchData } from "@/providers/branch-data-provider";
+import { useHashScroll } from "@/hooks/use-hash-scroll";
 import type { Category, Lang, Product } from "@/types";
 
 type Range = "day" | "week" | "month" | "year";
@@ -71,6 +72,8 @@ export function RevenuePage() {
   const branch = data;
   const snapshot = getRevenueSnapshot(branch, range);
   const hasRenderableData = hasRevenueData && snapshot.actual.length > 0;
+
+  useHashScroll(role !== "staff" && hasRenderableData);
 
   if (role === "staff")
     return (
@@ -162,22 +165,24 @@ export function RevenuePage() {
         }
       />
 
-      <CrisisContextStrip
-        lang={lang}
-        metric={comparisonTotal > 0 ? fmtMoney(gap, { compact: true }) : "-"}
-        metricLabel={
-          lang === "th" ? "ส่วนต่างจากช่วงเทียบ" : "Comparison gap"
-        }
-        headline={
-          lang === "th"
-            ? `ยอดขาย ${snapshot.label[lang]} เทียบกับข้อมูลเปรียบเทียบจาก backend${
-                mainDrag ? ` · หมวดที่ฉุดหลักคือ ${mainDrag.th}` : ""
-              }`
-            : `${snapshot.label[lang]} sales compared with backend comparison data${
-                mainDrag ? ` · primary drag is ${mainDrag.en}` : ""
-              }`
-        }
-      />
+      <section id="performance-highlight" className="scroll-mt-20">
+        <CrisisContextStrip
+          lang={lang}
+          metric={comparisonTotal > 0 ? fmtMoney(gap, { compact: true }) : "-"}
+          metricLabel={
+            lang === "th" ? "ส่วนต่างจากช่วงเทียบ" : "Comparison gap"
+          }
+          headline={
+            lang === "th"
+              ? `ยอดขาย ${snapshot.label[lang]} เทียบกับข้อมูลเปรียบเทียบจาก backend${
+                  mainDrag ? ` · หมวดที่ฉุดหลักคือ ${mainDrag.th}` : ""
+                }`
+              : `${snapshot.label[lang]} sales compared with backend comparison data${
+                  mainDrag ? ` · primary drag is ${mainDrag.en}` : ""
+                }`
+          }
+        />
+      </section>
 
       {(error || !hasRenderableData) && (
         <Card className="border-warn/45 bg-warn-50/60 shadow-none">
@@ -275,51 +280,53 @@ export function RevenuePage() {
         </Card>
       </section>
 
-      <XSectionHeader
-        idx="02"
-        title={lang === "th" ? "แนวโน้มและการเร่ง" : "Trajectory & pacing"}
-        sub={lang === "th" ? "วันต่อวัน · เทียบกับเส้นเป้า" : "Day-by-day vs target line"}
-      />
+      <section id="sales-mtd-ytd" className="scroll-mt-20">
+        <XSectionHeader
+          idx="02"
+          title={lang === "th" ? "แนวโน้มและการเร่ง" : "Trajectory & pacing"}
+          sub={lang === "th" ? "วันต่อวัน · เทียบกับเส้นเป้า" : "Day-by-day vs target line"}
+        />
 
-      <Card className="rounded-[10px] border border-border bg-card shadow-none">
-        <CardHeader className="flex flex-row items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-[13.5px]">
-              {lang === "th" ? "ยอดขายรายวัน · MTD" : "Daily sales · MTD"}
-            </CardTitle>
-            <CardDescription className="text-xs">
-              {snapshot.description[lang]}
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-3 text-[11.5px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <span className="h-0.5 w-3 bg-primary" />
-              {lang === "th" ? "ยอดจริง" : "Actual"}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <span className="w-3 border-t-2 border-dashed border-muted-foreground" />
-              {lang === "th" ? "เส้นเป้า" : "Target line"}
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <LineChart
-            data={snapshot.actual}
-            compare={snapshot.comparison}
-            labels={snapshot.labels}
-            height={240}
-            formatY={(value) => fmtMoney(value, { compact: true })}
-          />
-          <InsightNote
-            title={lang === "th" ? "ข้อสังเกตจาก AI" : "AI observation"}
-            className="mt-3"
-          >
-            {lang === "th"
-              ? `ข้อมูลจาก API แสดงส่วนต่าง ${fmtMoney(gap, { compact: true })} (${fmtPct(gapPct, { sign: true, dp: 1 })}) เทียบกับชุด comparison`
-              : `API data shows a ${fmtMoney(gap, { compact: true })} gap (${fmtPct(gapPct, { sign: true, dp: 1 })}) versus the comparison series.`}
-          </InsightNote>
-        </CardContent>
-      </Card>
+        <Card className="rounded-[10px] border border-border bg-card shadow-none">
+          <CardHeader className="flex flex-row items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-[13.5px]">
+                {lang === "th" ? "ยอดขายรายวัน · MTD" : "Daily sales · MTD"}
+              </CardTitle>
+              <CardDescription className="text-xs">
+                {snapshot.description[lang]}
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-3 text-[11.5px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <span className="h-0.5 w-3 bg-primary" />
+                {lang === "th" ? "ยอดจริง" : "Actual"}
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="w-3 border-t-2 border-dashed border-muted-foreground" />
+                {lang === "th" ? "เส้นเป้า" : "Target line"}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <LineChart
+              data={snapshot.actual}
+              compare={snapshot.comparison}
+              labels={snapshot.labels}
+              height={240}
+              formatY={(value) => fmtMoney(value, { compact: true })}
+            />
+            <InsightNote
+              title={lang === "th" ? "ข้อสังเกตจาก AI" : "AI observation"}
+              className="mt-3"
+            >
+              {lang === "th"
+                ? `ข้อมูลจาก API แสดงส่วนต่าง ${fmtMoney(gap, { compact: true })} (${fmtPct(gapPct, { sign: true, dp: 1 })}) เทียบกับชุด comparison`
+                : `API data shows a ${fmtMoney(gap, { compact: true })} gap (${fmtPct(gapPct, { sign: true, dp: 1 })}) versus the comparison series.`}
+            </InsightNote>
+          </CardContent>
+        </Card>
+      </section>
 
       <XSectionHeader
         idx="03"
@@ -393,17 +400,18 @@ export function RevenuePage() {
         </Card>
       </section>
 
-      <XSectionHeader
-        idx="04"
-        title={lang === "th" ? "Top 30 · สินค้าที่ขับและฉุดยอด" : "Top 30 · gain / loss SKUs"}
-        sub={
-          lang === "th"
-            ? "สินค้าหลัก 5 อันดับ ทั้งดีและไม่ดี เทียบกับ MTD เดือนก่อน"
-            : "Top 5 movers on each side, vs last month MTD"
-        }
-      />
+      <section id="top-30-gain-loss" className="scroll-mt-20">
+        <XSectionHeader
+          idx="04"
+          title={lang === "th" ? "Top 30 · สินค้าที่ขับและฉุดยอด" : "Top 30 · gain / loss SKUs"}
+          sub={
+            lang === "th"
+              ? "สินค้าหลัก 5 อันดับ ทั้งดีและไม่ดี เทียบกับ MTD เดือนก่อน"
+              : "Top 5 movers on each side, vs last month MTD"
+          }
+        />
 
-      <section className="grid grid-cols-1 gap-3.5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-2">
         <TopMoverTable
           title={lang === "th" ? "สินค้าที่ขับยอด" : "Gain SKUs"}
           tone="primary"
@@ -416,15 +424,17 @@ export function RevenuePage() {
           products={topLoss}
           lang={lang}
         />
+      </div>
       </section>
 
-      <XSectionHeader
-        idx="05"
-        title={lang === "th" ? "ลูกค้า · ขนาดบิล · การกลับมาซื้อ" : "Customers · basket size · retention"}
-        sub={lang === "th" ? "Facts tile #3 · ตัวชี้วัดเชิงพฤติกรรม" : "Facts tile #3 - behavioural KPIs"}
-      />
+      <section id="customer-sales-kpis" className="scroll-mt-20">
+        <XSectionHeader
+          idx="05"
+          title={lang === "th" ? "ลูกค้า · ขนาดบิล · การกลับมาซื้อ" : "Customers · basket size · retention"}
+          sub={lang === "th" ? "Facts tile #3 · ตัวชี้วัดเชิงพฤติกรรม" : "Facts tile #3 - behavioural KPIs"}
+        />
 
-      <section className="grid grid-cols-1 gap-3.5 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3.5 md:grid-cols-3">
         <CustomerMetricCard
           icon={ReceiptText}
           label={lang === "th" ? "ขนาดบิลเฉลี่ย" : "Avg basket"}
@@ -450,6 +460,7 @@ export function RevenuePage() {
           delta={basketDelta}
           note={lang === "th" ? "เทียบกับค่าเฉลี่ยจากชุด comparison" : "Compared with the comparison basket average"}
         />
+      </div>
       </section>
 
       <RecoveryFooter lang={lang} categories={categoryPacing} products={topLoss} />
