@@ -27,6 +27,7 @@ export interface PaymentShare {
 }
 
 export interface BranchData {
+  id: any;
   store: StoreInfo;
   hours: number[];
   hourly: number[];
@@ -46,6 +47,7 @@ export interface BranchData {
 
 export function createEmptyBranchData(): BranchData {
   return {
+    id: undefined,
     store: {
       code: "",
       name: { th: "", en: "" },
