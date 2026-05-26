@@ -21,12 +21,16 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { BrandMark } from "@/components/brand-mark";
 import { getT } from "@/lib/i18n";
+import {
+  MOCK_EMPLOYEE_ACCOUNTS,
+  authenticateMockEmployee,
+} from "@/lib/mock-auth";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
 
 export function LoginPage() {
   const router = useRouter();
-  const { lang } = useAppShell();
+  const { lang, loginAs } = useAppShell();
   const tx = getT(lang);
   const t = tx.login;
   const [u, setU] = React.useState("");
@@ -43,9 +47,20 @@ export function LoginPage() {
       );
       return;
     }
+    const account = authenticateMockEmployee(u, p);
+    if (!account) {
+      setError(
+        lang === "th"
+          ? "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง"
+          : "Employee ID or password is incorrect",
+      );
+      return;
+    }
+
     setError(null);
     setBusy(true);
     setTimeout(() => {
+      loginAs(account.role);
       setBusy(false);
       router.push("/dashboard");
     }, 600);
@@ -95,6 +110,24 @@ export function LoginPage() {
               {t.welcomeBack}
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">{t.subtitle}</p>
+          </div>
+
+          <div className="mb-4 rounded-md border bg-muted/60 px-3 py-2.5 text-[12px] text-muted-foreground">
+            <div className="mb-1 font-semibold text-foreground">
+              {lang === "th" ? "บัญชีทดสอบ" : "Mock accounts"}
+            </div>
+            <div className="space-y-1">
+              {MOCK_EMPLOYEE_ACCOUNTS.map((account) => (
+                <div key={account.employeeId} className="flex justify-between gap-3">
+                  <span className="font-medium uppercase text-foreground">
+                    {account.role}
+                  </span>
+                  <span className="mono text-right">
+                    {account.employeeId} / {account.password}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <form onSubmit={submit} className="flex flex-col gap-3.5">

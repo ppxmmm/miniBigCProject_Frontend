@@ -3,7 +3,7 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
+import { Topbar } from "@/components/layout/Topbar";
 import { getT } from "@/lib/i18n";
 import { getUserProfile } from "@/lib/user-data";
 import type { CurrentUser, Lang, Role } from "@/types";
@@ -13,13 +13,14 @@ interface AppShellContextValue {
   role: Role;
   currentUser: CurrentUser;
   toggleLang: () => void;
+  loginAs: (role: Role) => void;
 }
 
 const AppShellContext = React.createContext<AppShellContextValue | null>(null);
 
 export function AppShellProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = React.useState<Lang>("th");
-  const [role] = React.useState<Role>("manager");
+  const [role, setRole] = React.useState<Role>("manager");
 
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
@@ -37,9 +38,13 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
     setLang((value) => (value === "th" ? "en" : "th"));
   }, []);
 
+  const loginAs = React.useCallback((nextRole: Role) => {
+    setRole(nextRole);
+  }, []);
+
   const value = React.useMemo(
-    () => ({ lang, role, currentUser, toggleLang }),
-    [lang, role, currentUser, toggleLang],
+    () => ({ lang, role, currentUser, toggleLang, loginAs }),
+    [lang, role, currentUser, toggleLang, loginAs],
   );
 
   return (
