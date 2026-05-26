@@ -3,7 +3,7 @@
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/Topbar";
+import { Topbar } from "@/components/layout/topbar";
 import { getT } from "@/lib/i18n";
 import { clearAuthRole, readAuthRole, writeAuthRole } from "@/lib/auth-session";
 import { getUserProfile } from "@/lib/user-data";
@@ -88,7 +88,9 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <AppShellContext.Provider value={value}>{children}</AppShellContext.Provider>
+    <AppShellContext.Provider value={value}>
+      {children}
+    </AppShellContext.Provider>
   );
 }
 

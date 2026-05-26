@@ -21,6 +21,8 @@ export interface StoreInfo {
 }
 
 export interface PaymentShare {
+  id?: number;
+  paymentMethodId?: number;
   th: string;
   en: string;
   v: number;

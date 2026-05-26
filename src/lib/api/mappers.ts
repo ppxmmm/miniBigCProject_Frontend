@@ -76,6 +76,8 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
     dailyLast,
     monthly,
     category: api.category_sales.map((c) => ({
+      id: c.id,
+      categoryId: c.category_id,
       th: c.name_th,
       en: c.name_en,
       v: c.sales_value,
@@ -84,11 +86,14 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       color: c.color,
     })),
     payments: api.payment_mix.map((p) => ({
+      id: p.id,
+      paymentMethodId: p.payment_method_id,
       th: p.name_th,
       en: p.name_en,
       v: p.share,
     })),
     topProducts: api.top_products.map((p) => ({
+      id: p.id,
       sku: p.sku,
       th: p.name_th,
       en: p.name_en,
