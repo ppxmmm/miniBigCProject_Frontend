@@ -242,11 +242,23 @@ export function RevenuePage() {
               </span>
             </div>
             <Button
+              type="button"
               size="sm"
               variant="outline"
               className="gap-2"
               disabled={refreshing}
-              onClick={() => void refresh()}
+              onClick={() => {
+                void refresh({
+                  success:
+                    lang === "th"
+                      ? "โหลดข้อมูลรายได้ใหม่แล้ว"
+                      : "Revenue data refreshed",
+                  error:
+                    lang === "th"
+                      ? "โหลดข้อมูลรายได้ไม่สำเร็จ — ตรวจสอบว่า backend ทำงานอยู่"
+                      : "Could not refresh revenue data — check that the backend is running",
+                });
+              }}
             >
               <RefreshCcw
                 className={cn("size-3.5", refreshing && "animate-spin")}

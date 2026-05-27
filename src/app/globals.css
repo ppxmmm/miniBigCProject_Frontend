@@ -342,7 +342,7 @@
     background: color-mix(in oklch, var(--muted) 55%, transparent);
   }
 
-  /* Login hero — left panel entrance + ambient motion */
+  /* Login hero — left panel entrance + subtle brand motion */
   @keyframes login-fade-up {
     from {
       opacity: 0;
@@ -351,15 +351,6 @@
     to {
       opacity: 1;
       transform: translateY(0);
-    }
-  }
-  @keyframes login-float {
-    0%,
-    100% {
-      transform: translate(0, 0) scale(1);
-    }
-    50% {
-      transform: translate(14px, -10px) scale(1.04);
     }
   }
   @keyframes login-gradient-shift {
@@ -374,13 +365,6 @@
   .login-hero-panel {
     background-size: 220% 220%;
     animation: login-gradient-shift 14s ease-in-out infinite;
-  }
-  .login-hero-blob {
-    animation: login-float 9s ease-in-out infinite;
-  }
-  .login-hero-blob-slow {
-    animation: login-float 12s ease-in-out infinite;
-    animation-delay: -4s;
   }
   .login-hero-in {
     opacity: 0;
@@ -408,9 +392,7 @@
     animation-delay: 0.92s;
   }
   @media (prefers-reduced-motion: reduce) {
-    .login-hero-panel,
-    .login-hero-blob,
-    .login-hero-blob-slow {
+    .login-hero-panel {
       animation: none;
     }
     .login-hero-in {

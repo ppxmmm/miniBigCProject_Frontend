@@ -910,7 +910,7 @@ function formatSyncTime(date: Date | null, lang: Lang) {
 export function DashboardPage() {
   const router = useRouter();
   const { lang, role, currentUser } = useAppShell();
-  const { data: branch, lastFetchedAt, refetch } = useBranchData();
+  const { data: branch, lastFetchedAt } = useBranchData();
   const { refresh, loading: refreshing } = useBranchRefresh();
   const t = getT(lang);
   const d = DASH_I18N[lang];
@@ -953,8 +953,14 @@ export function DashboardPage() {
               <Clock />
               {t.common.lastUpdated} {formatSyncTime(lastFetchedAt, lang)}
             </Badge>
-            <Button size="sm" variant="outline" onClick={refetch}>
-              <RefreshCcw />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={refreshing}
+              onClick={handleRefresh}
+            >
+              <RefreshCcw className={cn(refreshing && "animate-spin")} />
               {t.common.refresh}
             </Button>
             <Button size="sm" variant="outline" onClick={handleExport}>
