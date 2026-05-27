@@ -34,6 +34,13 @@ export interface PaymentShare {
   share: number;
 }
 
+export function uniquePaymentShares(payments: PaymentShare[]): PaymentShare[] {
+  return payments.filter(
+    (p, i, arr) =>
+      arr.findIndex((q) => q.paymentMethodId === p.paymentMethodId) === i,
+  );
+}
+
 export interface BranchData {
   id: number | undefined;
   store: StoreInfo;
