@@ -11,7 +11,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
+export async function apiGet<T>(path: string, role?: Role | null): Promise<T> {
   const response = await fetch(apiUrl(path), {
     method: "GET",
     headers: requestHeaders(),
@@ -35,6 +35,7 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<TResponse, TBody>(
   path: string,
   body: TBody,
+  role?: Role | null,
 ): Promise<TResponse> {
   const response = await fetch(apiUrl(path), {
     method: "POST",
