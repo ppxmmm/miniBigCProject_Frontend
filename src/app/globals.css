@@ -210,6 +210,55 @@
     stroke: var(--card);
     stroke-width: 2;
   }
+  .chart-area-fill {
+    animation: chartAreaReveal 0.8s ease-out both;
+    transform-origin: center bottom;
+  }
+  .chart-main-line {
+    animation: chartLineDraw 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .chart-target-line {
+    animation: chartTargetReveal 0.6s ease-out 0.2s both;
+  }
+  .chart-compare-line {
+    animation: chartTargetReveal 0.6s ease-out 0.2s both;
+  }
+  @keyframes chartLineDraw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes chartAreaReveal {
+    from {
+      opacity: 0;
+      transform: scaleY(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+  @keyframes chartTargetReveal {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chart-area-fill,
+    .chart-main-line,
+    .chart-target-line,
+    .chart-compare-line {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+  }
 
   /* Alert pulse */
   .pulse-dot {
@@ -237,6 +286,25 @@
     100% {
       transform: scale(1.6);
       opacity: 0;
+    }
+  }
+
+  /* Refresh buttons — counter-clockwise spin while loading */
+  .animate-refresh-spin {
+    animation: refresh-spin 0.65s linear infinite;
+  }
+  @keyframes refresh-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-refresh-spin {
+      animation: none;
+      opacity: 0.65;
     }
   }
 
