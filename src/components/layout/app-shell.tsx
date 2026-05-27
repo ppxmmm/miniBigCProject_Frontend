@@ -8,6 +8,7 @@ import { ChatWidget } from "@/components/chat/chat-widget";
 import {
   clearAuthRole,
   readAuthRole,
+  readSsoProfile,
   subscribeAuthRole,
   writeAuthRole,
 } from "@/lib/auth-session";
@@ -49,18 +50,42 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
     getServerProfileOverrides,
   );
 
+  const [ssoProfile, setSsoProfile] = React.useState<{
+    name?: string;
+    email?: string;
+    sub?: string;
+  } | null>(null);
+
+  React.useEffect(() => {
+    setSsoProfile(readSsoProfile());
+  }, []);
+
   const currentUser = React.useMemo<CurrentUser>(() => {
     const tx = getT(lang);
     const profile = getUserProfile(role, lang);
+    const ssoName = ssoProfile?.name;
+    const ssoEmail = ssoProfile?.email;
+    const ssoSub = ssoProfile?.sub;
     return {
-      name: profileOverrides.name ?? profile.name,
-      initials: profileOverrides.initials ?? profile.initials,
-      email: profileOverrides.email ?? profile.email,
+      name: profileOverrides.name ?? ssoName ?? profile.name,
+      initials:
+        profileOverrides.initials ??
+        (ssoName
+          ? ssoName
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((w) => w[0] ?? "")
+              .join("")
+              .toUpperCase()
+          : profile.initials),
+      email: profileOverrides.email ?? ssoEmail ?? profile.email,
       phone: profileOverrides.phone ?? profile.phone,
-      employeeId: profile.employeeId,
+      employeeId: ssoSub ?? profile.employeeId,
       role: tx.role[role],
     };
-  }, [lang, profileOverrides, role]);
+  }, [lang, profileOverrides, role, ssoProfile]);
 
   const toggleLang = React.useCallback(() => {
     setLang((value) => (value === "th" ? "en" : "th"));
@@ -72,6 +97,7 @@ export function AppShellProvider({ children }: { children: React.ReactNode }) {
 
   const logout = React.useCallback(() => {
     clearAuthRole();
+    void fetch("/api/auth/logout", { method: "POST" });
   }, []);
 
   const value = React.useMemo(
