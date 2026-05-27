@@ -58,7 +58,6 @@ export function buildRevenueExportRows(
     ]),
     [],
     ["Payment (TH)", "Payment (EN)", "Share %"],
-    ...branch.payments.map((payment) => [
     ...uniquePaymentShares(branch.payments).map((payment) => [
       payment.th,
       payment.en,
