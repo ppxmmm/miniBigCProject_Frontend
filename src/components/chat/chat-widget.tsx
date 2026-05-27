@@ -155,7 +155,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
         inputRef.current?.focus();
       }
     },
-    [lang, loading, messages, role, isTh],
+    [loading, role, isTh],
   );
 
   const handleKeyDown = React.useCallback(
@@ -176,7 +176,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
   const suggested = SUGGESTED[lang];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_18px_50px_-10px_rgba(0,0,0,0.28),0_6px_14px_-4px_rgba(0,0,0,0.12)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-[0_18px_50px_-10px_rgba(0,0,0,0.28),0_6px_14px_-4px_rgba(0,0,0,0.12)] sm:rounded-2xl">
       <div
         className="flex shrink-0 items-center gap-3 px-4 py-3.5 text-white"
         style={{ background: PRIMARY_GRADIENT }}
@@ -216,7 +216,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
       <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-background px-3.5 py-4">
         <div className="flex items-start gap-2">
           <AssistantAvatar />
-          <div className="max-w-[78%] rounded-[12px_12px_12px_4px] border border-border bg-card px-3 py-[9px] text-[13px] leading-[1.5] text-foreground">
+          <div className="max-w-[min(78%,20rem)] rounded-[12px_12px_12px_4px] border border-border bg-card px-3 py-[9px] text-[13px] leading-[1.5] text-foreground">
             {renderRich(greeting)}
           </div>
         </div>
@@ -232,7 +232,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
             {msg.role === "assistant" && <AssistantAvatar />}
             <div
               className={cn(
-                "max-w-[78%] px-3 py-[9px] text-[13px] leading-[1.5]",
+                "max-w-[min(78%,20rem)] px-3 py-[9px] text-[13px] leading-[1.5] break-words",
                 msg.role === "user"
                   ? "rounded-[12px_12px_4px_12px] bg-primary text-primary-foreground"
                   : msg.error
@@ -289,7 +289,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
 
       <div
         className={cn(
-          "flex shrink-0 items-end gap-2 bg-card px-3 py-2.5",
+          "flex shrink-0 items-end gap-2 bg-card px-3 pt-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0px))] sm:pb-2.5",
           (!isEmpty || loading) && "border-t border-border",
         )}
       >
@@ -355,11 +355,20 @@ export function ChatWidget() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  React.useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
   return (
     <>
       {open && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 sm:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] sm:bg-black/20 sm:backdrop-blur-none"
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -367,13 +376,19 @@ export function ChatWidget() {
 
       <div
         className={cn(
-          "fixed right-[22px] z-50 w-[380px] max-w-[calc(100vw-32px)] transition-all duration-200",
+          "fixed z-50 flex flex-col transition-[transform,opacity] duration-200 ease-out",
+          "inset-x-0 bottom-0 w-full sm:inset-x-auto sm:right-[max(1.375rem,env(safe-area-inset-right,0px))] sm:left-auto sm:w-[min(24rem,calc(100vw-2rem))] sm:bottom-[calc(5.625rem+env(safe-area-inset-bottom,0px))]",
           open
             ? "pointer-events-auto translate-y-0 opacity-100"
-            : "pointer-events-none translate-y-2 opacity-0",
-          "bottom-[90px]",
+            : "pointer-events-none translate-y-4 opacity-0",
+          open
+            ? "h-[calc(100dvh-env(safe-area-inset-bottom,0px))] max-h-[100dvh] sm:h-[min(35rem,calc(100dvh-8rem))] sm:max-h-[calc(100dvh-8rem)]"
+            : "h-0 overflow-hidden",
         )}
-        style={{ height: "min(560px, calc(100dvh - 130px))" }}
+        role="dialog"
+        aria-modal={open}
+        aria-hidden={!open}
+        aria-label={isTh ? "แชท AI Donjai" : "Donjai AI chat"}
       >
         {open && <ChatPanel onClose={() => setOpen(false)} />}
       </div>
@@ -384,10 +399,12 @@ export function ChatWidget() {
         aria-label={isTh ? "เปิดแชท AI" : "Open AI chat"}
         aria-expanded={open}
         className={cn(
-          "fixed bottom-[22px] right-[22px] z-50 flex size-14 items-center justify-center rounded-full transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
-          open
-            ? "scale-90 border border-border bg-card text-foreground shadow-[0_4px_14px_-2px_rgba(0,0,0,0.18)] hover:scale-95"
-            : "text-white shadow-[0_8px_24px_-4px_color-mix(in_oklch,var(--primary)_55%,transparent),0_2px_6px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95",
+          "fixed z-50 flex size-14 items-center justify-center rounded-full transition-all duration-200 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+          "bottom-[calc(1.375rem+env(safe-area-inset-bottom,0px))] right-[calc(1.375rem+env(safe-area-inset-right,0px))]",
+          open &&
+            "max-sm:pointer-events-none max-sm:scale-0 max-sm:opacity-0 sm:scale-90 sm:border sm:border-border sm:bg-card sm:text-foreground sm:opacity-100 sm:shadow-[0_4px_14px_-2px_rgba(0,0,0,0.18)] sm:hover:scale-95",
+          !open &&
+            "text-white shadow-[0_8px_24px_-4px_color-mix(in_oklch,var(--primary)_55%,transparent),0_2px_6px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95",
         )}
         style={open ? undefined : { background: PRIMARY_GRADIENT }}
       >

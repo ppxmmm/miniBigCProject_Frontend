@@ -33,7 +33,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader, Restricted } from "@/components/page-helpers";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchData } from "@/providers/branch-data-provider";
+import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { daysBetween, fmtD, fmtMoney, fmtNum } from "@/lib/format";
+import { buildSuggestionsExportRows } from "@/lib/page-exports";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { BranchData } from "@/lib/branch-data";
@@ -496,6 +498,13 @@ export function SuggestionsPage() {
   const gapClose = targetValue > 0 ? Math.min(1, planTotal / targetValue) : 0;
   const gapPercent = Math.round(gapClose * 100);
 
+  const handleExport = () => {
+    downloadCsv(
+      exportFilename("recovery-plan"),
+      buildSuggestionsExportRows(lang, branch, actions),
+    );
+  };
+
   return (
     <div className="fade-in">
       <PageHeader
@@ -511,7 +520,7 @@ export function SuggestionsPage() {
               <Sparkles />
               {isTh ? "ขับเคลื่อนด้วย AI · Donjai" : "AI · Donjai"}
             </Badge>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleExport}>
               <Download />
               {t.common.export}
             </Button>

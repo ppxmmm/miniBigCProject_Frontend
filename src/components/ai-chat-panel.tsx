@@ -95,7 +95,7 @@ export function AIChatPanel({ lang, role }: AIChatPanelProps) {
   );
 
   return (
-    <Card className="h-full min-h-[520px] gap-0 rounded-xl border-border/80 py-0">
+    <Card className="flex h-full min-h-[min(60dvh,520px)] max-h-[calc(100dvh-2rem)] flex-col gap-0 rounded-xl border-border/80 py-0 sm:min-h-[520px]">
       <CardHeader className="border-b px-4 py-3">
         <div className="flex items-start gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -125,7 +125,7 @@ export function AIChatPanel({ lang, role }: AIChatPanelProps) {
               >
                 <div
                   className={cn(
-                    "max-w-[86%] rounded-xl px-3 py-2 text-sm leading-relaxed",
+                    "max-w-[min(86%,20rem)] rounded-xl px-3 py-2 text-sm leading-relaxed break-words",
                     isUser
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-foreground",
@@ -159,7 +159,10 @@ export function AIChatPanel({ lang, role }: AIChatPanelProps) {
           </div>
         )}
 
-        <form className="border-t p-3" onSubmit={handleSubmit}>
+        <form
+          className="border-t p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
+          onSubmit={handleSubmit}
+        >
           <label className="sr-only" htmlFor="ai-chat-message">
             {t.inputLabel}
           </label>

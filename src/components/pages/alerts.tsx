@@ -33,7 +33,9 @@ import {
   FilterToggle,
 } from "@/components/filter-dialog";
 import { Empty, PageHeader } from "@/components/page-helpers";
+import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { fmtD, fmtMoney, daysBetween } from "@/lib/format";
+import { buildAlertsExportRows } from "@/lib/page-exports";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
@@ -258,6 +260,13 @@ export function AlertsPage() {
     });
   }, [isTh, refreshBranch]);
 
+  const handleExport = React.useCallback(() => {
+    downloadCsv(
+      exportFilename("alerts"),
+      buildAlertsExportRows(lang, branch, oosItems, expiring),
+    );
+  }, [branch, expiring, lang, oosItems]);
+
   return (
     <div className="fade-in" data-screen-label="Stock Alerts">
       <PageHeader
@@ -269,7 +278,7 @@ export function AlertsPage() {
         }
         right={
           <>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleExport}>
               <Download />
               {t.common.export}
             </Button>
