@@ -30,6 +30,7 @@ export async function apiGet<T>(path: string, role?: Role | null): Promise<T> {
   const response = await fetch(apiUrl(path), {
     method: "GET",
     headers: buildHeaders(role),
+    headers: requestHeaders(),
     cache: "no-store",
   });
 
@@ -55,6 +56,7 @@ export async function apiPost<TResponse, TBody>(
   const response = await fetch(apiUrl(path), {
     method: "POST",
     headers: buildHeaders(role, { "Content-Type": "application/json" }),
+    headers: requestHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
     cache: "no-store",
   });
@@ -71,4 +73,16 @@ export async function apiPost<TResponse, TBody>(
   }
 
   return response.json() as Promise<TResponse>;
+}
+
+function requestHeaders(extra?: HeadersInit): HeadersInit {
+  const headers = new Headers(extra);
+  headers.set("Accept", "application/json");
+
+  const role = readAuthRole();
+  if (role) {
+    headers.set("X-User-Role", role);
+  }
+
+  return headers;
 }

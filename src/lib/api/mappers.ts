@@ -1,6 +1,7 @@
 import type { BranchData, BranchOption } from "@/lib/branch-data";
 import { mapDeliveryStatus } from "@/lib/branch-data";
 import type { ApiDashboardData, ApiStore } from "@/types/api";
+import type { ApiDashboardData, ApiPaymentMix, ApiStore } from "@/types/api";
 
 function parseDate(value: string): Date {
   return new Date(value);
@@ -9,6 +10,18 @@ function parseDate(value: string): Date {
 function formatEta(time: string): string {
   if (!time) return "";
   return time.length >= 5 ? time.slice(0, 5) : time;
+}
+
+/** Backend returns one row per sales_date; keep the latest row per payment method. */
+function latestPaymentMixRows(rows: ApiPaymentMix[]): ApiPaymentMix[] {
+  const latestByMethod = new Map<number, ApiPaymentMix>();
+  for (const row of rows) {
+    const existing = latestByMethod.get(row.payment_method_id);
+    if (!existing || row.sales_date >= existing.sales_date) {
+      latestByMethod.set(row.payment_method_id, row);
+    }
+  }
+  return [...latestByMethod.values()].sort((a, b) => b.share - a.share);
 }
 
 export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
@@ -87,7 +100,7 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       trend: c.trend_percent,
       color: c.color,
     })),
-    payments: api.payment_mix.map((p) => ({
+    payments: latestPaymentMixRows(api.payment_mix).map((p) => ({
       id: p.id,
       paymentMethodId: p.payment_method_id,
       th: p.name_th,

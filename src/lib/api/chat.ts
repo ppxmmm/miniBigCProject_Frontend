@@ -1,4 +1,5 @@
 import { apiUrl } from "@/lib/api/config";
+import { readAuthRole } from "@/lib/auth-session";
 import type { Role } from "@/types";
 
 export interface AiChatResponse {
@@ -16,6 +17,7 @@ export async function askDonjai(
       "Content-Type": "application/json",
       "X-User-Role": role,
     },
+    headers: chatHeaders(role),
     body: JSON.stringify({ message, role }),
   });
 
@@ -30,4 +32,10 @@ export async function askDonjai(
   }
 
   return { reply: data.reply };
+}
+
+function chatHeaders(fallbackRole: Role): HeadersInit {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  headers.set("X-User-Role", readAuthRole() ?? fallbackRole);
+  return headers;
 }
