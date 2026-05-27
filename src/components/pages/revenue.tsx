@@ -46,7 +46,7 @@ import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchRefresh } from "@/hooks/use-branch-refresh";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { useHashScroll } from "@/hooks/use-hash-scroll";
-import type { PaymentShare } from "@/lib/branch-data";
+import { uniquePaymentShares, type PaymentShare } from "@/lib/branch-data";
 import type { Category, Lang, Product } from "@/types";
 
 type Range = "day" | "week" | "month" | "year";
@@ -123,6 +123,7 @@ export function RevenuePage() {
   const categoryPacing = branch.category
     .filter((c, i, arr) => arr.findIndex((q) => q.en === c.en) === i)
     .map(toCategoryPacing);
+  const paymentMix = uniquePaymentShares(branch.payments);
   const paymentColor = (index: number) =>
     [
       "var(--primary)",
@@ -467,7 +468,7 @@ export function RevenuePage() {
               <CardContent className="grid gap-5 sm:grid-cols-[auto_1fr] sm:items-center">
                 <div className="flex justify-center">
                   <Donut
-                    data={branch.payments.map((payment, index) => ({
+                    data={paymentMix.map((payment, index) => ({
                       value: payment.v,
                       color: paymentColor(index),
                     }))}
@@ -476,7 +477,7 @@ export function RevenuePage() {
                   />
                 </div>
                 <div className="space-y-3">
-                  {branch.payments.map((payment, index) => (
+                  {paymentMix.map((payment, index) => (
                     <div
                       key={paymentListKey(payment, index)}
                       className="grid grid-cols-[12px_1fr_auto] items-center gap-3 text-[13px]"
@@ -1245,8 +1246,8 @@ function RecoveryFooter({
       upside: Math.abs(category.gap),
       window: lang === "th" ? "จาก category_sales" : "from category_sales",
     })),
-    ...lossProducts.map((product) => ({
-      key: `product-${product.sku}`,
+    ...lossProducts.map((product, index) => ({
+      key: `product-${productListKey(product, index)}`,
       icon: Banknote,
       label: product[lang],
       action:

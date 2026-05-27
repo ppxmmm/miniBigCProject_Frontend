@@ -129,6 +129,16 @@ const SHRINK_COLORS = [
   "var(--muted-foreground)",
 ];
 
+/** SKUs can repeat per location/expiry row from the backend. */
+function inventoryRowKey(
+  sku: string,
+  loc: string,
+  index: number,
+  extra = "",
+): string {
+  return [sku, loc, extra, String(index)].filter(Boolean).join("-");
+}
+
 function buildShrinkByCategory(items: ExpiringActionItem[]) {
   const grouped = new Map<string, { th: string; en: string; v: number }>();
 
@@ -595,11 +605,14 @@ function OosTable({
         </tr>
       </thead>
       <tbody>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const isCritical = item.supplier === "Top-30";
           const isAcked = acked.has(item.sku);
           return (
-            <tr key={item.sku} className={cn(isAcked && "opacity-50")}>
+            <tr
+              key={inventoryRowKey(item.sku, item.loc, index)}
+              className={cn(isAcked && "opacity-50")}
+            >
               <td>
                 <div className="flex items-center gap-2.5">
                   {isCritical && (
@@ -704,11 +717,19 @@ function ExpiringTable({
         </tr>
       </thead>
       <tbody>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const isAcked = acked.has(item.sku);
           const isUrgent = item.daysLeft <= 1;
           return (
-            <tr key={item.sku} className={cn(isAcked && "opacity-50")}>
+            <tr
+              key={inventoryRowKey(
+                item.sku,
+                item.loc,
+                index,
+                String(item.exp.getTime()),
+              )}
+              className={cn(isAcked && "opacity-50")}
+            >
               <td>
                 <div className="text-[13px] font-medium">{item[lang]}</div>
                 <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">
@@ -798,10 +819,13 @@ function SlowTable({
         </tr>
       </thead>
       <tbody>
-        {items.map((item) => {
+        {items.map((item, index) => {
           const isAcked = acked.has(item.sku);
           return (
-            <tr key={item.sku} className={cn(isAcked && "opacity-50")}>
+            <tr
+              key={inventoryRowKey(item.sku, "", index, String(item.days))}
+              className={cn(isAcked && "opacity-50")}
+            >
               <td>
                 <div className="text-[13px] font-medium">{item[lang]}</div>
                 <div className="mono mt-0.5 text-[11.5px] text-muted-foreground">
