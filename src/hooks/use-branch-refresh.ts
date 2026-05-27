@@ -12,7 +12,7 @@ type RefreshMessages = {
 
 export function useBranchRefresh(defaultMessages?: RefreshMessages) {
   const { lang } = useAppShell();
-  const { refetch, loading } = useBranchData();
+  const { refetch, isRefetching } = useBranchData();
   const isTh = lang === "th";
 
   const refresh = React.useCallback(
@@ -34,5 +34,5 @@ export function useBranchRefresh(defaultMessages?: RefreshMessages) {
     [defaultMessages, isTh, refetch],
   );
 
-  return { refresh, loading };
+  return { refresh, loading: isRefetching };
 }

@@ -11,6 +11,7 @@ import type { Role } from "@/types";
 interface BranchDataContextValue {
   data: BranchData;
   loading: boolean;
+  isRefetching: boolean;
   error: string | null;
   lastFetchedAt: Date | null;
   refetch: () => Promise<boolean>;
@@ -27,6 +28,7 @@ export function BranchDataProvider({
 }) {
   const [data, setData] = React.useState<BranchData>(createEmptyBranchData);
   const [loading, setLoading] = React.useState(true);
+  const [isRefetching, setIsRefetching] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = React.useState<Date | null>(null);
   const authRole = React.useSyncExternalStore(
@@ -35,28 +37,40 @@ export function BranchDataProvider({
     () => null,
   );
 
-  const load = React.useCallback(async (role: Role): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+  const load = React.useCallback(
+    async (role: Role, options?: { refetch?: boolean }): Promise<boolean> => {
+      const isRefetch = options?.refetch ?? false;
+      if (isRefetch) {
+        setIsRefetching(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
 
-    try {
-      const api = await fetchDashboard(role);
-      setData(mapDashboardToBranchData(api));
-      setLastFetchedAt(new Date());
-      return true;
-    } catch (err) {
-      const message =
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
+      try {
+        const api = await fetchDashboard(role);
+        setData(mapDashboardToBranchData(api));
+        setLastFetchedAt(new Date());
+        return true;
+      } catch (err) {
+        const message =
+          err instanceof ApiError
             ? err.message
-            : "Failed to load branch data";
-      setError(message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+            : err instanceof Error
+              ? err.message
+              : "Failed to load branch data";
+        setError(message);
+        return false;
+      } finally {
+        if (isRefetch) {
+          setIsRefetching(false);
+        } else {
+          setLoading(false);
+        }
+      }
+    },
+    [],
+  );
 
   React.useEffect(() => {
     if (!authRole) {
@@ -67,16 +81,17 @@ export function BranchDataProvider({
   }, [authRole, load]);
 
   const refetch = React.useCallback(async (): Promise<boolean> => {
-    if (!authRole) {
-      setError("role is required");
+    const role = readAuthRole();
+    if (!role) {
+      setError("Not signed in");
       return false;
     }
-    return load(authRole);
-  }, [authRole, load]);
+    return load(role, { refetch: true });
+  }, [load]);
 
   const value = React.useMemo(
-    () => ({ data, loading, error, lastFetchedAt, refetch }),
-    [data, loading, error, lastFetchedAt, refetch],
+    () => ({ data, loading, isRefetching, error, lastFetchedAt, refetch }),
+    [data, loading, isRefetching, error, lastFetchedAt, refetch],
   );
 
   return (

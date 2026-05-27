@@ -21,6 +21,24 @@ test.describe("Login flow", () => {
     await expect(page.getByText("กรุณากรอกข้อมูลให้ครบ")).toBeVisible();
   });
 
+  test("opens forgot password dialog and submits reset request", async ({ page }) => {
+    await openLogin(page);
+
+    await page.getByRole("button", { name: "ลืมรหัสผ่าน?" }).click();
+    await expect(
+      page.getByRole("heading", { name: "รีเซ็ตรหัสผ่าน" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "ส่งคำขอรีเซ็ต" }).click();
+    await expect(page.getByText("กรุณากรอกอีเมลหรือรหัสพนักงาน")).toBeVisible();
+
+    await page.getByLabel("อีเมลหรือรหัสพนักงาน").fill("EMP-0421-M");
+    await page.getByRole("button", { name: "ส่งคำขอรีเซ็ต" }).click();
+
+    await expect(page.getByText("ส่งคำขอรีเซ็ตแล้ว")).toBeVisible();
+    await expect(page.getByText("ต้องการความช่วยเหลือทันที?")).toBeVisible();
+  });
+
   test("manager can sign in and reach dashboard", async ({ page }) => {
     await openLogin(page);
 
