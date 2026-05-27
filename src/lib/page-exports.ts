@@ -1,3 +1,4 @@
+import type { BranchData } from "@/lib/branch-data";
 import { uniquePaymentShares, type BranchData } from "@/lib/branch-data";
 import type { Lang } from "@/types";
 
@@ -57,6 +58,7 @@ export function buildRevenueExportRows(
     ]),
     [],
     ["Payment (TH)", "Payment (EN)", "Share %"],
+    ...branch.payments.map((payment) => [
     ...uniquePaymentShares(branch.payments).map((payment) => [
       payment.th,
       payment.en,

@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import {
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -34,21 +36,29 @@ import {
 } from "@/components/ui/dialog";
 import { BrandMark } from "@/components/brand-mark";
 import { getT } from "@/lib/i18n";
-import {
-  MOCK_EMPLOYEE_ACCOUNTS,
-  authenticateMockEmployee,
-} from "@/lib/mock-auth";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
 
+const SSO_ERROR_MESSAGES: Record<string, { th: string; en: string }> = {
+  state_mismatch: {
+    th: "เซสชันล็อกอินหมดอายุ กรุณาลองใหม่อีกครั้ง",
+    en: "Login session expired. Please try again.",
+  },
+  token_exchange_failed: {
+    th: "ไม่สามารถเชื่อมต่อกับ SSO Server ได้",
+    en: "Could not connect to SSO server.",
+  },
+  missing_params: {
+    th: "การตอบสนองจาก SSO ไม่ถูกต้อง",
+    en: "Invalid response from SSO.",
+  },
+};
+
 export function LoginPage() {
-  const router = useRouter();
-  const { lang, loginAs } = useAppShell();
+  const { lang } = useAppShell();
   const tx = getT(lang);
   const t = tx.login;
-  const [u, setU] = React.useState("");
-  const [p, setP] = React.useState("");
-  const [shown, setShown] = React.useState(false);
+  const searchParams = useSearchParams();
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [resetOpen, setResetOpen] = React.useState(false);
@@ -74,31 +84,17 @@ export function LoginPage() {
     setResetSent(true);
   };
 
-  const submit = (e?: React.FormEvent | React.MouseEvent) => {
-    e?.preventDefault?.();
-    if (!u || !p) {
-      setError(
-        lang === "th" ? "กรุณากรอกข้อมูลให้ครบ" : "Please fill in all fields",
-      );
-      return;
-    }
-    const account = authenticateMockEmployee(u, p);
-    if (!account) {
-      setError(
-        lang === "th"
-          ? "รหัสพนักงานหรือรหัสผ่านไม่ถูกต้อง"
-          : "Employee ID or password is incorrect",
-      );
-      return;
-    }
+  const errorCode = searchParams.get("error");
+  const errorMsg = errorCode
+    ? (SSO_ERROR_MESSAGES[errorCode]?.[lang] ??
+      (lang === "th"
+        ? "เกิดข้อผิดพลาดในการเข้าสู่ระบบ"
+        : "Authentication error. Please try again."))
+    : null;
 
-    setError(null);
+  const startSsoLogin = () => {
     setBusy(true);
-    setTimeout(() => {
-      loginAs(account.role);
-      setBusy(false);
-      router.replace("/dashboard");
-    }, 600);
+    window.location.href = "/api/auth/login";
   };
 
   return (
@@ -108,7 +104,9 @@ export function LoginPage() {
           <BrandMark size={36} inverse />
           <div>
             <div className="tracking-tight">{tx.appName}</div>
-            <div className="text-[11.5px] font-normal opacity-70">{tx.appSub}</div>
+            <div className="text-[11.5px] font-normal opacity-70">
+              {tx.appSub}
+            </div>
           </div>
         </div>
 
@@ -168,13 +166,15 @@ export function LoginPage() {
 
       <div className="flex w-full shrink-0 flex-col justify-center bg-background p-6 md:w-110 md:p-12">
         <div className="mx-auto w-full max-w-90">
-          <div className="mb-7">
+          <div className="mb-8">
             <h2 className="m-0 text-2xl font-semibold tracking-tight">
               {t.welcomeBack}
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">{t.subtitle}</p>
           </div>
 
+          <div className="flex flex-col gap-4">
+            {errorMsg && (
           <div className="mb-4 rounded-md border bg-muted/60 px-3 py-2.5 text-[12px] text-muted-foreground">
             <div className="mb-1 font-semibold text-foreground">
               {lang === "th" ? "บัญชีทดสอบ" : "Mock accounts"}
@@ -258,16 +258,21 @@ export function LoginPage() {
                   "flex items-center gap-1.5",
                 )}
               >
-                <AlertCircle className="size-3.5" />
-                {error}
+                <AlertCircle className="size-3.5 shrink-0" />
+                {errorMsg}
               </div>
             )}
 
-            <Button type="submit" onClick={submit} className="h-10.5 text-sm">
+            <Button
+              type="button"
+              className="h-11 text-sm"
+              onClick={startSsoLogin}
+              disabled={busy}
+            >
               {busy ? (
                 <>
-                  <RotateCcw />
-                  {lang === "th" ? "กำลังเข้าสู่ระบบ…" : "Signing in…"}
+                  <RotateCcw className="animate-spin" />
+                  {lang === "th" ? "กำลังเชื่อมต่อ SSO…" : "Connecting to SSO…"}
                 </>
               ) : (
                 <>
@@ -277,22 +282,12 @@ export function LoginPage() {
               )}
             </Button>
 
-            <div className="my-1 flex items-center gap-2.5 text-xs text-muted-foreground">
-              <Separator className="flex-1" />
-              <span>{t.or}</span>
-              <Separator className="flex-1" />
-            </div>
-
-            <Button variant="outline" type="button" className="h-10.5">
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden>
-                <path fill="#F25022" d="M11 11H2V2h9z" />
-                <path fill="#7FBA00" d="M22 11h-9V2h9z" />
-                <path fill="#00A4EF" d="M11 22H2v-9h9z" />
-                <path fill="#FFB900" d="M22 22h-9v-9h9z" />
-              </svg>
-              {t.ssoMs}
-            </Button>
-          </form>
+            <p className="text-center text-[11px] text-muted-foreground">
+              {lang === "th"
+                ? "คุณจะถูกนำไปยังหน้าล็อกอินของ SSO เพื่อยืนยันตัวตน"
+                : "You'll be redirected to the SSO login page to authenticate."}
+            </p>
+          </div>
         </div>
       </div>
 
