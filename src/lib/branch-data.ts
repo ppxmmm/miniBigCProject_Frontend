@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 
 export interface StoreInfo {
+  id?: number;
   code: string;
   name: LocalizedString;
   short: LocalizedString;
@@ -20,12 +21,17 @@ export interface StoreInfo {
   staffInitials: string;
 }
 
+export type BranchOption = StoreInfo & {
+  id: number;
+};
+
 export interface PaymentShare {
   id?: number;
   paymentMethodId?: number;
   th: string;
   en: string;
   v: number;
+  share: number;
 }
 
 export interface BranchData {
@@ -51,6 +57,7 @@ export function createEmptyBranchData(): BranchData {
   return {
     id: undefined,
     store: {
+      id: undefined,
       code: "",
       name: { th: "", en: "" },
       short: { th: "", en: "" },

@@ -11,7 +11,6 @@ import {
   Flame,
   Package,
   ReceiptText,
-  RefreshCcw,
   Sparkles,
   TrendingDown,
   TrendingUp,
@@ -30,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { LineChart } from "@/components/charts/line-chart";
 import { Donut } from "@/components/charts/donut";
 import { PageHeader, Restricted } from "@/components/page-helpers";
+import { RefreshSpinnerIcon } from "@/components/refresh-spinner-icon";
 import {
   Table,
   TableBody,
@@ -41,7 +41,6 @@ import {
 import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
 import { buildRevenueExportRows } from "@/lib/page-exports";
-import { cn } from "@/lib/utils";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchRefresh } from "@/hooks/use-branch-refresh";
@@ -260,9 +259,7 @@ export function RevenuePage() {
                 });
               }}
             >
-              <RefreshCcw
-                className={cn("size-3.5", refreshing && "animate-spin")}
-              />
+              <RefreshSpinnerIcon spinning={refreshing} className="size-3.5" />
               {t.common.refresh}
             </Button>
           </CardContent>
@@ -384,10 +381,12 @@ export function RevenuePage() {
               <CardContent>
                 <LineChart
                   data={snapshot.actual}
-                  compare={snapshot.comparison}
+                  target={snapshot.target}
                   labels={snapshot.labels}
                   height={240}
                   formatY={(value) => fmtMoney(value, { compact: true })}
+                  actualLabel={lang === "th" ? "ยอดจริง" : "Actual"}
+                  targetLabel={lang === "th" ? "เส้นเป้า" : "Target line"}
                 />
                 <InsightNote
                   title={lang === "th" ? "ข้อสังเกตจาก AI" : "AI observation"}
@@ -621,6 +620,7 @@ function getRevenueSnapshot(
     return {
       actual: branch.hourly,
       comparison: branch.hourlyYest,
+      target: buildTargetSeries(branch.hourly, branch.hourlyYest),
       labels: branch.hours.map((hour) => `${String(hour).padStart(2, "0")}:00`),
       label: { th: "วันนี้", en: "Today" },
       description: {
@@ -634,6 +634,7 @@ function getRevenueSnapshot(
     return {
       actual: branch.monthly,
       comparison: [],
+      target: buildTargetSeries(branch.monthly, []),
       labels: branch.monthly.map((_, index) => String(index + 1)),
       label: { th: "YTD", en: "YTD" },
       description: {
@@ -646,6 +647,7 @@ function getRevenueSnapshot(
   return {
     actual: branch.daily,
     comparison: branch.dailyLast,
+    target: buildTargetSeries(branch.daily, branch.dailyLast),
     labels: branch.daily.map((_, index) => String(index + 1)),
     label: {
       th: range === "week" ? "สัปดาห์นี้" : "MTD",
@@ -653,6 +655,22 @@ function getRevenueSnapshot(
     },
     description: { th: "รายวันจาก backend", en: "Daily series from backend" },
   };
+}
+
+function buildTargetSeries(actual: number[], comparison: number[]) {
+  const backendTarget = comparison
+    .slice(0, actual.length)
+    .map((value) => (Number.isFinite(value) ? value : 0));
+
+  if (backendTarget.some((value) => value > 0)) {
+    return backendTarget;
+  }
+
+  if (actual.length === 0) return [];
+
+  const averageActual = sum(actual) / actual.length;
+  const fallbackTarget = averageActual > 0 ? averageActual * 1.08 : 0;
+  return actual.map(() => fallbackTarget);
 }
 
 function toCategoryPacing(category: Category): CategoryPacing {

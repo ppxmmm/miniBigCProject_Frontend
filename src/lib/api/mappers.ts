@@ -1,6 +1,6 @@
-import type { BranchData } from "@/lib/branch-data";
+import type { BranchData, BranchOption } from "@/lib/branch-data";
 import { mapDeliveryStatus } from "@/lib/branch-data";
-import type { ApiDashboardData } from "@/types/api";
+import type { ApiDashboardData, ApiStore } from "@/types/api";
 
 function parseDate(value: string): Date {
   return new Date(value);
@@ -61,6 +61,7 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
   return {
     id: store.id,
     store: {
+      id: store.id,
       code: store.code,
       name: { th: store.name_th, en: store.name_en },
       short: { th: store.short_name_th, en: store.short_name_en },
@@ -92,6 +93,7 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       th: p.name_th,
       en: p.name_en,
       v: p.share,
+      share: p.share,
     })),
     topProducts: api.top_products.map((p) => ({
       id: p.id,
@@ -135,5 +137,19 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
     })),
     promos,
     events,
+  };
+}
+
+export function mapStoreToBranchOption(store: ApiStore): BranchOption {
+  return {
+    id: store.id,
+    code: store.code,
+    name: { th: store.name_th, en: store.name_en },
+    short: { th: store.short_name_th, en: store.short_name_en },
+    address: { th: store.address_th, en: store.address_en },
+    manager: { th: store.manager_name_th, en: store.manager_name_en },
+    managerInitials: store.manager_initials,
+    staff: { th: store.staff_name_th, en: store.staff_name_en },
+    staffInitials: store.staff_initials,
   };
 }

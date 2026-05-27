@@ -11,6 +11,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Check,
+  Loader2,
   Lock,
   LogOut,
   X,
@@ -25,6 +27,8 @@ import { BrandMark } from "@/components/brand-mark";
 import {
   alertBadgeCount,
   openDeliveryBadgeCount,
+  type BranchOption,
+  type StoreInfo,
 } from "@/lib/branch-data";
 import { getT } from "@/lib/i18n";
 import { navigateMainNav } from "@/lib/navigate";
@@ -64,7 +68,14 @@ export function Sidebar({
 }: SidebarProps) {
   const router = useRouter();
   const tx = getT(lang);
-  const { data: branch } = useBranchData();
+  const {
+    data: branch,
+    branches,
+    selectedBranchId,
+    loading,
+    isRefetching,
+    selectBranch,
+  } = useBranchData();
   const alertCount = alertBadgeCount(branch);
   const deliveryCount = openDeliveryBadgeCount(branch);
 
@@ -120,16 +131,15 @@ export function Sidebar({
       {/* Store selector */}
       {!sbCollapsed && (
         <div className="px-3 pb-3">
-          <div className="flex items-center gap-2.5 rounded-md border bg-muted px-3 py-2.5 text-[12.5px]">
-            <div className="size-2 shrink-0 rounded-full bg-primary" />
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold">{branch.store.short[lang]}</div>
-              <div className="mono text-[10.5px] text-muted-foreground">
-                {branch.store.code}
-              </div>
-            </div>
-            <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
-          </div>
+          <BranchSelector
+            branches={branches}
+            currentBranch={branch.store}
+            lang={lang}
+            role={role}
+            selectedBranchId={selectedBranchId}
+            loading={loading || isRefetching}
+            onSelect={selectBranch}
+          />
         </div>
       )}
 
@@ -241,6 +251,139 @@ export function Sidebar({
         </SheetContent>
       </Sheet>
     </>
+  );
+}
+
+interface BranchSelectorProps {
+  branches: BranchOption[];
+  currentBranch: StoreInfo;
+  lang: Lang;
+  role: Role;
+  selectedBranchId: number | null;
+  loading: boolean;
+  onSelect: (branchId: number) => Promise<boolean>;
+}
+
+function BranchSelector({
+  branches,
+  currentBranch,
+  lang,
+  role,
+  selectedBranchId,
+  loading,
+  onSelect,
+}: BranchSelectorProps) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef<HTMLDivElement | null>(null);
+  const canSwitch = role === "manager" && branches.length > 1;
+  const selectedId = selectedBranchId ?? currentBranch.id ?? null;
+  const label =
+    currentBranch.short[lang] ||
+    currentBranch.name[lang] ||
+    (lang === "th" ? "กำลังโหลดสาขา" : "Loading branch");
+  const branchCountText =
+    role === "manager" && branches.length > 1
+      ? lang === "th"
+        ? `${branches.length} สาขา`
+        : `${branches.length} branches`
+      : currentBranch.code;
+
+  React.useEffect(() => {
+    if (!open) return;
+
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={!canSwitch}
+        aria-haspopup={canSwitch ? "listbox" : undefined}
+        aria-expanded={canSwitch ? open : undefined}
+        onClick={() => canSwitch && setOpen((value) => !value)}
+        className={cn(
+          "flex w-full items-center gap-2.5 rounded-md border bg-muted px-3 py-2.5 text-left text-[12.5px] transition-colors",
+          canSwitch && "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          !canSwitch && "cursor-default",
+        )}
+      >
+        <span className="size-2 shrink-0 rounded-full bg-primary" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold">{label}</span>
+          <span className="mono block text-[10.5px] text-muted-foreground">
+            {currentBranch.code}
+            {branchCountText && branchCountText !== currentBranch.code
+              ? ` · ${branchCountText}`
+              : ""}
+          </span>
+        </span>
+        {loading ? (
+          <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+        ) : (
+          <ChevronDown
+            className={cn(
+              "size-3.5 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180",
+              !canSwitch && "opacity-40",
+            )}
+          />
+        )}
+      </button>
+
+      {open && canSwitch && (
+        <div
+          role="listbox"
+          aria-label={lang === "th" ? "เลือกสาขา" : "Select branch"}
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 overflow-hidden rounded-lg border bg-popover p-1.5 text-popover-foreground shadow-lg"
+        >
+          {branches.map((branch) => {
+            const selected = branch.id === selectedId;
+            return (
+              <button
+                key={branch.id}
+                type="button"
+                role="option"
+                aria-selected={selected}
+                onClick={async () => {
+                  setOpen(false);
+                  if (!selected) {
+                    await onSelect(branch.id);
+                  }
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  selected && "bg-primary-50 text-primary",
+                )}
+              >
+                <span
+                  className={cn(
+                    "size-2 shrink-0 rounded-full",
+                    selected ? "bg-primary" : "bg-muted-foreground/35",
+                  )}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[12.5px] font-semibold">
+                    {branch.short[lang]}
+                  </span>
+                  <span className="mono block text-[10.5px] text-muted-foreground">
+                    {branch.code}
+                  </span>
+                </span>
+                {selected && <Check className="size-3.5 shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

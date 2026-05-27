@@ -10,7 +10,6 @@ import {
   Flame,
   Package,
   Pin,
-  RotateCcw,
   Sparkles,
   Store,
   Truck,
@@ -34,6 +33,7 @@ import {
   FilterToggle,
 } from "@/components/filter-dialog";
 import { PageHeader } from "@/components/page-helpers";
+import { RefreshSpinnerIcon } from "@/components/refresh-spinner-icon";
 import { Sparkline } from "@/components/charts/sparkline";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchRefresh } from "@/hooks/use-branch-refresh";
@@ -238,7 +238,7 @@ export function DeliveryPage() {
               disabled={refreshing}
               onClick={() => void refresh()}
             >
-              <RotateCcw className={cn(refreshing && "animate-spin")} />
+              <RefreshSpinnerIcon spinning={refreshing} />
               {t.common.refresh}
             </Button>
           </>

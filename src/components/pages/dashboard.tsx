@@ -14,7 +14,6 @@ import {
   Download,
   Flame,
   Package,
-  RefreshCcw,
   Sparkles,
   TrendingUp,
   Truck,
@@ -34,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkline } from "@/components/charts/sparkline";
 import { PageHeader } from "@/components/page-helpers";
+import { RefreshSpinnerIcon } from "@/components/refresh-spinner-icon";
 import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { fmtMoney, fmtPct } from "@/lib/format";
 import {
@@ -473,7 +473,7 @@ function AISummaryCard({
             disabled={refreshing}
             onClick={onRefresh}
           >
-            <RefreshCcw className={cn(refreshing && "animate-spin")} />
+            <RefreshSpinnerIcon spinning={refreshing} />
           </Button>
           <Button size="sm" variant="outline">
             <Download />
@@ -960,7 +960,7 @@ export function DashboardPage() {
               disabled={refreshing}
               onClick={handleRefresh}
             >
-              <RefreshCcw className={cn(refreshing && "animate-spin")} />
+              <RefreshSpinnerIcon spinning={refreshing} />
               {t.common.refresh}
             </Button>
             <Button size="sm" variant="outline" onClick={handleExport}>
