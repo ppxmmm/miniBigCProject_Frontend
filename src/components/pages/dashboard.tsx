@@ -34,7 +34,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sparkline } from "@/components/charts/sparkline";
 import { PageHeader } from "@/components/page-helpers";
+import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { fmtMoney, fmtPct } from "@/lib/format";
+import {
+  buildDashboardExportRows,
+  buildJointCommitExportRows,
+} from "@/lib/page-exports";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
@@ -817,9 +822,25 @@ function SupportNeedsCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Button size="sm" variant="outline">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              downloadCsv(
+                exportFilename("joint-commit"),
+                buildJointCommitExportRows(
+                  fields.map((field) => ({
+                    label: field.label,
+                    value: field.value,
+                  })),
+                  lang,
+                  branch,
+                ),
+              )
+            }
+          >
             <Download />
-            {isTh ? "ส่งออก PDF" : "Export PDF"}
+            {isTh ? "ส่งออก CSV" : "Export CSV"}
           </Button>
           <Button
             size="sm"
@@ -899,6 +920,13 @@ export function DashboardPage() {
   const facts = buildFacts(lang, branch);
   const insights = buildInsights(lang, branch);
 
+  const handleExport = React.useCallback(() => {
+    downloadCsv(
+      exportFilename("dashboard"),
+      buildDashboardExportRows(facts, insights),
+    );
+  }, [facts, insights]);
+
   const handleRefresh = React.useCallback(() => {
     void refresh();
   }, [refresh]);
@@ -929,7 +957,7 @@ export function DashboardPage() {
               <RefreshCcw />
               {t.common.refresh}
             </Button>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={handleExport}>
               <Download />
               {t.common.export}
             </Button>

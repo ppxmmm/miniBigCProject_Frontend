@@ -38,7 +38,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadCsv, exportFilename } from "@/lib/download-csv";
 import { fmtMoney, fmtNum, fmtPct } from "@/lib/format";
+import { buildRevenueExportRows } from "@/lib/page-exports";
 import { cn } from "@/lib/utils";
 import { getT } from "@/lib/i18n";
 import { useAppShell } from "@/components/layout/app-shell";
@@ -133,6 +135,17 @@ export function RevenuePage() {
   const mainDrag = [...categoryPacing].sort((a, b) => a.gap - b.gap)[0];
 
   const handleExport = () => {
+    downloadCsv(
+      exportFilename(`revenue-${range}`),
+      buildRevenueExportRows(lang, branch, range, snapshot, {
+        total,
+        comparisonTotal,
+        gap,
+        gapPct,
+        transactions,
+        avgBasket,
+      }),
+    );
     setExported(true);
     window.setTimeout(() => setExported(false), 1600);
   };
