@@ -12,6 +12,7 @@ export async function sendAIChatMessage(
   const response = await apiPost<AIChatResponse, { message: string; role: Role }>(
     "/api/ai/chat",
     { message, role },
+    role,
   );
 
   if (!response.reply) {

@@ -3,8 +3,10 @@
 import * as React from "react";
 import { fetchDashboard } from "@/lib/api/dashboard";
 import { ApiError } from "@/lib/api/client";
+import { readAuthRole, subscribeAuthRole } from "@/lib/auth-session";
 import { mapDashboardToBranchData } from "@/lib/api/mappers";
 import { createEmptyBranchData, type BranchData } from "@/lib/branch-data";
+import type { Role } from "@/types";
 
 interface BranchDataContextValue {
   data: BranchData;
@@ -27,13 +29,18 @@ export function BranchDataProvider({
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = React.useState<Date | null>(null);
+  const authRole = React.useSyncExternalStore(
+    subscribeAuthRole,
+    readAuthRole,
+    () => null,
+  );
 
-  const load = React.useCallback(async (): Promise<boolean> => {
+  const load = React.useCallback(async (role: Role): Promise<boolean> => {
     setLoading(true);
     setError(null);
 
     try {
-      const api = await fetchDashboard();
+      const api = await fetchDashboard(role);
       setData(mapDashboardToBranchData(api));
       setLastFetchedAt(new Date());
       return true;
@@ -52,12 +59,24 @@ export function BranchDataProvider({
   }, []);
 
   React.useEffect(() => {
-    void Promise.resolve().then(load);
-  }, [load]);
+    if (!authRole) {
+      setLoading(false);
+      return;
+    }
+    void load(authRole);
+  }, [authRole, load]);
+
+  const refetch = React.useCallback(async (): Promise<boolean> => {
+    if (!authRole) {
+      setError("role is required");
+      return false;
+    }
+    return load(authRole);
+  }, [authRole, load]);
 
   const value = React.useMemo(
-    () => ({ data, loading, error, lastFetchedAt, refetch: load }),
-    [data, loading, error, lastFetchedAt, load],
+    () => ({ data, loading, error, lastFetchedAt, refetch }),
+    [data, loading, error, lastFetchedAt, refetch],
   );
 
   return (

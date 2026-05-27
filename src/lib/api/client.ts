@@ -1,4 +1,20 @@
 import { apiUrl } from "@/lib/api/config";
+import { readAuthRole } from "@/lib/auth-session";
+import type { Role } from "@/types";
+
+const USER_ROLE_HEADER = "X-User-Role";
+
+function buildHeaders(role?: Role | null, extra?: HeadersInit): HeadersInit {
+  const headers = new Headers(extra);
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+  const resolvedRole = role ?? readAuthRole();
+  if (resolvedRole) {
+    headers.set(USER_ROLE_HEADER, resolvedRole);
+  }
+  return headers;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -10,10 +26,10 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiGet<T>(path: string): Promise<T> {
+export async function apiGet<T>(path: string, role?: Role | null): Promise<T> {
   const response = await fetch(apiUrl(path), {
     method: "GET",
-    headers: { Accept: "application/json" },
+    headers: buildHeaders(role),
     cache: "no-store",
   });
 
@@ -34,13 +50,11 @@ export async function apiGet<T>(path: string): Promise<T> {
 export async function apiPost<TResponse, TBody>(
   path: string,
   body: TBody,
+  role?: Role | null,
 ): Promise<TResponse> {
   const response = await fetch(apiUrl(path), {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: buildHeaders(role, { "Content-Type": "application/json" }),
     body: JSON.stringify(body),
     cache: "no-store",
   });

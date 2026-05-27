@@ -11,7 +11,11 @@ export async function askDonjai(
 ): Promise<AiChatResponse> {
   const response = await fetch(apiUrl("/api/v1/ai/chat"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-User-Role": role,
+    },
     body: JSON.stringify({ message, role }),
   });
 
