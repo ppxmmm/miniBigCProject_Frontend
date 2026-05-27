@@ -11,7 +11,7 @@ interface BranchDataContextValue {
   loading: boolean;
   error: string | null;
   lastFetchedAt: Date | null;
-  refetch: () => void;
+  refetch: () => Promise<boolean>;
 }
 
 const BranchDataContext = React.createContext<BranchDataContextValue | null>(
@@ -36,6 +36,7 @@ export function BranchDataProvider({
       const api = await fetchDashboard();
       setData(mapDashboardToBranchData(api));
       setLastFetchedAt(new Date());
+      return true;
     } catch (err) {
       const message =
         err instanceof ApiError
