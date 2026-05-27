@@ -4,13 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import {
-import { useRouter } from "next/navigation";
-import {
-  User,
-  Lock,
   Mail,
-  Eye,
-  EyeOff,
   ArrowRight,
   RotateCcw,
   AlertCircle,
@@ -25,7 +19,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -60,14 +53,13 @@ export function LoginPage() {
   const t = tx.login;
   const searchParams = useSearchParams();
   const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
   const [resetOpen, setResetOpen] = React.useState(false);
   const [resetIdentifier, setResetIdentifier] = React.useState("");
   const [resetError, setResetError] = React.useState<string | null>(null);
   const [resetSent, setResetSent] = React.useState(false);
 
   const openPasswordReset = () => {
-    setResetIdentifier(u);
+    setResetIdentifier("");
     setResetError(null);
     setResetSent(false);
     setResetOpen(true);
@@ -119,19 +111,19 @@ export function LoginPage() {
               {t.tagline}
             </h1>
             <div className="mt-9 flex max-w-120 flex-wrap gap-4.5">
-              <Highlight
+              <LoginHeroHighlight
                 className="login-hero-in login-hero-in-4"
                 icon={TrendingUp}
                 label={lang === "th" ? "ยอดขายเรียลไทม์" : "Real-time sales"}
               />
-              <Highlight
+              <LoginHeroHighlight
                 className="login-hero-in login-hero-in-5"
                 icon={AlertTriangle}
                 label={
                   lang === "th" ? "เตือนสต็อกอัตโนมัติ" : "Smart stock alerts"
                 }
               />
-              <Highlight
+              <LoginHeroHighlight
                 className="login-hero-in login-hero-in-6"
                 icon={Truck}
                 label={lang === "th" ? "ติดตามการส่ง" : "Delivery tracking"}
@@ -175,83 +167,6 @@ export function LoginPage() {
 
           <div className="flex flex-col gap-4">
             {errorMsg && (
-          <div className="mb-4 rounded-md border bg-muted/60 px-3 py-2.5 text-[12px] text-muted-foreground">
-            <div className="mb-1 font-semibold text-foreground">
-              {lang === "th" ? "บัญชีทดสอบ" : "Mock accounts"}
-            </div>
-            <div className="space-y-1">
-              {MOCK_EMPLOYEE_ACCOUNTS.map((account) => (
-                <div key={account.employeeId} className="flex justify-between gap-3">
-                  <span className="font-medium uppercase text-foreground">
-                    {account.role}
-                  </span>
-                  <span className="mono text-right">
-                    {account.employeeId} / {account.password}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <form onSubmit={submit} className="flex flex-col gap-3.5">
-            <div>
-              <Label className="mb-1.5">{t.email}</Label>
-              <div className="relative">
-                <User className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="text"
-                  value={u}
-                  onChange={(e) => setU(e.target.value)}
-                  placeholder={lang === "th" ? "เช่น EMP-0421" : "e.g. EMP-0421"}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="mb-1.5 flex justify-between">
-                <Label className="m-0">{t.password}</Label>
-                <button
-                  type="button"
-                  className="rounded-sm text-xs font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
-                  onClick={openPasswordReset}
-                >
-                  {t.forgot}
-                </button>
-              </div>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type={shown ? "text" : "password"}
-                  value={p}
-                  onChange={(e) => setP(e.target.value)}
-                  placeholder="••••••••"
-                  className="pl-8 pr-9"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShown(!shown)}
-                  className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
-                >
-                  {shown ? (
-                    <EyeOff className="size-3.5" />
-                  ) : (
-                    <Eye className="size-3.5" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <label className="flex cursor-pointer items-center gap-2 text-[13px] select-none">
-              <input
-                type="checkbox"
-                defaultChecked
-                className="accent-primary"
-              />
-              {t.remember}
-            </label>
-
-            {error && (
               <div
                 className={cn(
                   "rounded-md bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive",
@@ -281,6 +196,16 @@ export function LoginPage() {
                 </>
               )}
             </Button>
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                className="rounded-sm text-xs font-medium text-primary underline-offset-4 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                onClick={openPasswordReset}
+              >
+                {t.forgot}
+              </button>
+            </div>
 
             <p className="text-center text-[11px] text-muted-foreground">
               {lang === "th"
@@ -407,7 +332,7 @@ export function LoginPage() {
   );
 }
 
-function Highlight({
+function LoginHeroHighlight({
   icon: Icon,
   label,
   className,
