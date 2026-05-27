@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import {
   Calendar,
   Check,
@@ -17,14 +18,22 @@ import {
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader, Restricted } from "@/components/page-helpers";
 import { useAppShell } from "@/components/layout/app-shell";
 import { useBranchData } from "@/providers/branch-data-provider";
-import { fmtMoney } from "@/lib/format";
+import { daysBetween, fmtD, fmtMoney, fmtNum } from "@/lib/format";
 import { getT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { BranchData } from "@/lib/branch-data";
@@ -214,6 +223,178 @@ function getFilteredActions(actions: RecoveryAction[], tab: PlanTab) {
   return actions;
 }
 
+function findSuggestionForAction(
+  branch: BranchData,
+  action: RecoveryAction,
+): Suggestion | null {
+  if (action.id.startsWith("promo-")) {
+    const id = action.id.slice("promo-".length);
+    return branch.promos.find((item) => String(item.id) === id) ?? null;
+  }
+  if (action.id.startsWith("event-")) {
+    const id = action.id.slice("event-".length);
+    return branch.events.find((item) => String(item.id) === id) ?? null;
+  }
+  return null;
+}
+
+function ActionDetailDialog({
+  action,
+  branch,
+  lang,
+  open,
+  onOpenChange,
+}: {
+  action: RecoveryAction | null;
+  branch: BranchData;
+  lang: Lang;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const isTh = lang === "th";
+  if (!action) return null;
+
+  const suggestion = findSuggestionForAction(branch, action);
+  const showAlertsLink = action.source === "alerts";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="gap-4 sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{action.title[lang]}</DialogTitle>
+          <DialogDescription>{action.desc[lang]}</DialogDescription>
+        </DialogHeader>
+
+        <dl className="grid grid-cols-2 gap-3 text-[12.5px]">
+          <div>
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {isTh ? "ผลตอบแทน" : "Upside"}
+            </dt>
+            <dd className="num mt-0.5 font-semibold text-primary">
+              +{fmtMoney(action.upside, { compact: true })}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {isTh ? "ระยะเวลา" : "Window"}
+            </dt>
+            <dd className="mt-0.5 font-medium">{action.window[lang]}</dd>
+          </div>
+          <div>
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {EFFORT_LABEL[action.effort][lang]}
+            </dt>
+            <dd className="mt-0.5 font-medium">
+              {Math.round(action.confidence * 100)}% {isTh ? "ความเชื่อมั่น" : "confidence"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {isTh ? "ผู้รับผิดชอบ" : "Owner"}
+            </dt>
+            <dd className="mt-0.5 font-medium">{action.owner[lang]}</dd>
+          </div>
+        </dl>
+
+        {action.id === "alerts-expiring" && branch.expiring.length > 0 && (
+          <div className="max-h-52 overflow-y-auto rounded-lg border">
+            <table className="w-full text-left text-[12px]">
+              <thead className="sticky top-0 bg-muted/80 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">{isTh ? "สินค้า" : "Product"}</th>
+                  <th className="px-3 py-2">{isTh ? "หมดอายุ" : "Expires"}</th>
+                  <th className="px-3 py-2 text-right">{isTh ? "มูลค่า" : "Value"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {branch.expiring.map((item) => (
+                  <tr key={`${item.sku}-${item.exp.getTime()}-${item.loc}`}>
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{item[lang]}</div>
+                      <div className="mono text-[10.5px] text-muted-foreground">
+                        {item.sku} · {item.loc}
+                      </div>
+                    </td>
+                    <td className="num px-3 py-2 whitespace-nowrap">
+                      {fmtD(item.exp, lang)} ({daysBetween(item.exp)}d)
+                    </td>
+                    <td className="num px-3 py-2 text-right font-medium">
+                      {fmtMoney(item.stock * item.price, { compact: true })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {action.id === "alerts-low-stock" && branch.lowStock.length > 0 && (
+          <div className="max-h-52 overflow-y-auto rounded-lg border">
+            <table className="w-full text-left text-[12px]">
+              <thead className="sticky top-0 bg-muted/80 text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">{isTh ? "สินค้า" : "Product"}</th>
+                  <th className="px-3 py-2 text-right">{isTh ? "คงเหลือ" : "Stock"}</th>
+                  <th className="px-3 py-2 text-right">{isTh ? "จุดสั่ง" : "Reorder"}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {branch.lowStock.map((item) => (
+                  <tr key={`${item.sku}-${item.loc}`}>
+                    <td className="px-3 py-2">
+                      <div className="font-medium">{item[lang]}</div>
+                      <div className="mono text-[10.5px] text-muted-foreground">
+                        {item.sku} · {item.loc}
+                      </div>
+                    </td>
+                    <td className="num px-3 py-2 text-right">{fmtNum(item.stock)}</td>
+                    <td className="num px-3 py-2 text-right">{fmtNum(item.reorder)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {suggestion && (
+          <div className="space-y-2 rounded-lg border bg-muted/40 p-3 text-[12.5px]">
+            <div>
+              <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {isTh ? "ประเภท" : "Type"}
+              </span>
+              <p className="mt-0.5 font-medium">{suggestion.type}</p>
+            </div>
+            <div>
+              <span className="text-[10.5px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {isTh ? "เป้าหมาย" : "Target"}
+              </span>
+              <p className="mt-0.5">{suggestion.target[lang]}</p>
+            </div>
+            <p className="leading-relaxed text-muted-foreground">{suggestion.desc[lang]}</p>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          {showAlertsLink ? (
+            <Link
+              href="/alerts"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+              onClick={() => onOpenChange(false)}
+            >
+              {isTh ? "เปิดหน้า Alerts" : "Open Alerts"}
+            </Link>
+          ) : (
+            <span />
+          )}
+          <Button size="sm" onClick={() => onOpenChange(false)}>
+            {isTh ? "ปิด" : "Close"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PriorityPill({ level, lang }: { level: Priority; lang: Lang }) {
   const labels: Record<Priority, LocalizedString> = {
     p1: { th: "P1 เร่งด่วน", en: "P1 urgent" },
@@ -286,6 +467,7 @@ export function SuggestionsPage() {
   const isTh = lang === "th";
   const [tab, setTab] = React.useState<PlanTab>("all");
   const [launched, setLaunched] = React.useState<Set<string>>(new Set());
+  const [detailAction, setDetailAction] = React.useState<RecoveryAction | null>(null);
 
   if (role === "staff") {
     return (
@@ -422,6 +604,16 @@ export function SuggestionsPage() {
         </span>
       </div>
 
+      <ActionDetailDialog
+        action={detailAction}
+        branch={branch}
+        lang={lang}
+        open={detailAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setDetailAction(null);
+        }}
+      />
+
       <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((action) => (
           <RecoveryActionCard
@@ -429,6 +621,7 @@ export function SuggestionsPage() {
             action={action}
             inPlan={launched.has(action.id)}
             lang={lang}
+            onShowDetails={() => setDetailAction(action)}
             onToggle={() => {
               setLaunched((prev) => {
                 const next = new Set(prev);
@@ -468,11 +661,13 @@ function RecoveryActionCard({
   action,
   inPlan,
   lang,
+  onShowDetails,
   onToggle,
 }: {
   action: RecoveryAction;
   inPlan: boolean;
   lang: Lang;
+  onShowDetails: () => void;
   onToggle: () => void;
 }) {
   const Icon = ICON_MAP[action.icon];
@@ -546,7 +741,7 @@ function RecoveryActionCard({
         </div>
 
         <div className="mt-auto flex gap-1.5">
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button size="sm" variant="outline" className="flex-1" onClick={onShowDetails}>
             {isTh ? "รายละเอียด" : "Details"}
           </Button>
           <Button
