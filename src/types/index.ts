@@ -5,6 +5,7 @@ export type Density = "compact" | "regular" | "spacious";
 export type LocalizedString = { th: string; en: string };
 
 export interface Product {
+  id?: number;
   sku: string;
   th: string;
   en: string;
@@ -62,6 +63,8 @@ export interface Suggestion {
 }
 
 export interface Category {
+  id?: number;
+  categoryId?: number;
   th: string;
   en: string;
   v: number;
@@ -74,6 +77,7 @@ export interface CurrentUser {
   name: string;
   initials: string;
   email: string;
+  phone: string;
   employeeId: string;
   role: string;
 }

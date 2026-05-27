@@ -1,23 +1,6 @@
-import {
-  CATEGORY,
-  DAILY,
-  DAILY_LAST,
-  DELIVERIES,
-  EVENTS,
-  EXPIRING,
-  HOURS,
-  HOURLY,
-  HOURLY_YEST,
-  LOW_STOCK,
-  MONTHLY,
-  PAYMENTS,
-  PROMOS,
-  STORE,
-  TOP_PRODUCTS,
-} from "@/lib/data";
-import type { BranchData } from "@/lib/branch-data";
+import type { BranchData, BranchOption } from "@/lib/branch-data";
 import { mapDeliveryStatus } from "@/lib/branch-data";
-import type { ApiDashboardData } from "@/types/api";
+import type { ApiDashboardData, ApiStore } from "@/types/api";
 
 function parseDate(value: string): Date {
   return new Date(value);
@@ -76,7 +59,9 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
     }));
 
   return {
+    id: store.id,
     store: {
+      id: store.id,
       code: store.code,
       name: { th: store.name_th, en: store.name_en },
       short: { th: store.short_name_th, en: store.short_name_en },
@@ -86,13 +71,15 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       staff: { th: store.staff_name_th, en: store.staff_name_en },
       staffInitials: store.staff_initials,
     },
-    hours: hours.length ? hours : [...HOURS],
-    hourly: hourly.length ? hourly : [...HOURLY],
-    hourlyYest: hourlyYest.length ? hourlyYest : [...HOURLY_YEST],
-    daily: daily.length ? daily : [...DAILY],
-    dailyLast: dailyLast.length ? dailyLast : [...DAILY_LAST],
-    monthly: monthly.length ? monthly : [...MONTHLY],
+    hours,
+    hourly,
+    hourlyYest,
+    daily,
+    dailyLast,
+    monthly,
     category: api.category_sales.map((c) => ({
+      id: c.id,
+      categoryId: c.category_id,
       th: c.name_th,
       en: c.name_en,
       v: c.sales_value,
@@ -101,11 +88,15 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
       color: c.color,
     })),
     payments: api.payment_mix.map((p) => ({
+      id: p.id,
+      paymentMethodId: p.payment_method_id,
       th: p.name_th,
       en: p.name_en,
       v: p.share,
+      share: p.share,
     })),
     topProducts: api.top_products.map((p) => ({
+      id: p.id,
       sku: p.sku,
       th: p.name_th,
       en: p.name_en,
@@ -149,22 +140,16 @@ export function mapDashboardToBranchData(api: ApiDashboardData): BranchData {
   };
 }
 
-export function getStaticBranchData(): BranchData {
+export function mapStoreToBranchOption(store: ApiStore): BranchOption {
   return {
-    store: STORE,
-    hours: [...HOURS],
-    hourly: [...HOURLY],
-    hourlyYest: [...HOURLY_YEST],
-    daily: [...DAILY],
-    dailyLast: [...DAILY_LAST],
-    monthly: [...MONTHLY],
-    category: [...CATEGORY],
-    payments: [...PAYMENTS],
-    topProducts: [...TOP_PRODUCTS],
-    expiring: [...EXPIRING],
-    lowStock: [...LOW_STOCK],
-    deliveries: [...DELIVERIES],
-    promos: [...PROMOS],
-    events: [...EVENTS],
+    id: store.id,
+    code: store.code,
+    name: { th: store.name_th, en: store.name_en },
+    short: { th: store.short_name_th, en: store.short_name_en },
+    address: { th: store.address_th, en: store.address_en },
+    manager: { th: store.manager_name_th, en: store.manager_name_en },
+    managerInitials: store.manager_initials,
+    staff: { th: store.staff_name_th, en: store.staff_name_en },
+    staffInitials: store.staff_initials,
   };
 }

@@ -3,11 +3,17 @@ import { AppShellProvider } from "@/components/layout/app-shell";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import brandIcon from "./Big_C_mini_logo.ico";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Mini BigC · Manager Console",
   description: "Branch operations console for Mini BigC retail managers",
+  icons: {
+    icon: brandIcon.src,
+    shortcut: brandIcon.src,
+    apple: brandIcon.src,
+  },
 };
 
 export default function RootLayout({
@@ -38,7 +44,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <AppShellProvider>{children}</AppShellProvider>
-            <Toaster richColors position="bottom-center" />
+            <Toaster richColors position="bottom-center" className="z-[100]" />
           </ThemeProvider>
         </TooltipProvider>
       </body>

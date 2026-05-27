@@ -63,6 +63,9 @@
   --warn-50: oklch(0.97 0.04 75);
   --info: oklch(0.55 0.14 240);
   --info-50: oklch(0.97 0.03 240);
+  --border-strong: oklch(0.85 0.008 95);
+  --sh-2: 0 4px 14px -2px rgba(20, 25, 18, 0.08),
+    0 1px 3px rgba(20, 25, 18, 0.04);
 }
 
 .dark {
@@ -112,6 +115,9 @@
   --warn-50: oklch(0.30 0.05 75);
   --info: oklch(0.62 0.14 240);
   --info-50: oklch(0.30 0.04 240);
+  --border-strong: oklch(0.36 0.012 95);
+  --sh-2: 0 4px 18px -4px rgba(0, 0, 0, 0.38),
+    0 1px 3px rgba(0, 0, 0, 0.24);
 }
 
 /* shadcn-style @theme inline — exposes CSS vars as Tailwind utilities */
@@ -204,6 +210,55 @@
     stroke: var(--card);
     stroke-width: 2;
   }
+  .chart-area-fill {
+    animation: chartAreaReveal 0.8s ease-out both;
+    transform-origin: center bottom;
+  }
+  .chart-main-line {
+    animation: chartLineDraw 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  .chart-target-line {
+    animation: chartTargetReveal 0.6s ease-out 0.2s both;
+  }
+  .chart-compare-line {
+    animation: chartTargetReveal 0.6s ease-out 0.2s both;
+  }
+  @keyframes chartLineDraw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes chartAreaReveal {
+    from {
+      opacity: 0;
+      transform: scaleY(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+  @keyframes chartTargetReveal {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .chart-area-fill,
+    .chart-main-line,
+    .chart-target-line,
+    .chart-compare-line {
+      animation: none;
+      stroke-dashoffset: 0;
+    }
+  }
 
   /* Alert pulse */
   .pulse-dot {
@@ -234,6 +289,48 @@
     }
   }
 
+  /* Refresh buttons — counter-clockwise spin while loading */
+  .animate-refresh-spin {
+    animation: refresh-spin 0.65s linear infinite;
+  }
+  @keyframes refresh-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(-360deg);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-refresh-spin {
+      animation: none;
+      opacity: 0.65;
+    }
+  }
+
+  /* Chat AI — bouncing dots loading indicator */
+  .chat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted-foreground);
+    opacity: 0.35;
+    animation: chat-bounce 1s infinite ease-in-out;
+    display: inline-block;
+  }
+  @keyframes chat-bounce {
+    0%,
+    60%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.35;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
   /* fade-in for page transitions */
   .fade-in {
     animation: fadeIn 0.25s ease;
@@ -246,6 +343,22 @@
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+
+  /* Facts tile deep-link: soft highlight after smooth scroll */
+  .hash-scroll-highlight {
+    animation: hashScrollTarget 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes hashScrollTarget {
+    0% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
+    }
+    22% {
+      box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 32%, transparent);
+    }
+    100% {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
     }
   }
 
@@ -263,5 +376,97 @@
       oklch(0.22 0.01 95) 0%,
       oklch(0.18 0.012 95) 100%
     );
+  }
+
+  [data-screen-label="Stock Alerts"] table th {
+    height: 42px;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  [data-screen-label="Stock Alerts"] table td {
+    padding: 13px 18px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  [data-screen-label="Stock Alerts"] table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  [data-screen-label="Stock Alerts"] table tbody tr {
+    transition:
+      background-color 0.16s ease,
+      opacity 0.16s ease;
+  }
+
+  [data-screen-label="Stock Alerts"] table tbody tr:hover {
+    background: color-mix(in oklch, var(--muted) 55%, transparent);
+  }
+
+  /* Login hero — left panel entrance + subtle brand motion */
+  @keyframes login-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes login-gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 40%;
+    }
+    50% {
+      background-position: 100% 60%;
+    }
+  }
+  .login-hero-panel {
+    background-size: 220% 220%;
+    animation: login-gradient-shift 14s ease-in-out infinite;
+  }
+  .login-hero-in {
+    opacity: 0;
+    animation: login-fade-up 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .login-hero-in-1 {
+    animation-delay: 0.08s;
+  }
+  .login-hero-in-2 {
+    animation-delay: 0.22s;
+  }
+  .login-hero-in-3 {
+    animation-delay: 0.36s;
+  }
+  .login-hero-in-4 {
+    animation-delay: 0.5s;
+  }
+  .login-hero-in-5 {
+    animation-delay: 0.64s;
+  }
+  .login-hero-in-6 {
+    animation-delay: 0.78s;
+  }
+  .login-hero-in-7 {
+    animation-delay: 0.92s;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .login-hero-panel {
+      animation: none;
+    }
+    .login-hero-in {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
   }
 }

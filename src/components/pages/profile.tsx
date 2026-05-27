@@ -14,6 +14,7 @@ import {
   EyeOff,
   type LucideIcon,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Card,
   CardHeader,
@@ -32,19 +33,91 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PageHeader } from "@/components/page-helpers";
 import { useBranchData } from "@/providers/branch-data-provider";
 import { getT } from "@/lib/i18n";
+import {
+  initialsFromName,
+  writeProfileOverrides,
+} from "@/lib/profile-session";
 import { cn } from "@/lib/utils";
 import { useAppShell } from "@/components/layout/app-shell";
 
 type Tab = "personal" | "security";
 
+type PersonalForm = {
+  name: string;
+  email: string;
+  phone: string;
+};
+
+function snapshotPersonal(user: {
+  name: string;
+  email: string;
+  phone: string;
+}): PersonalForm {
+  return { name: user.name, email: user.email, phone: user.phone };
+}
+
 export function ProfilePage() {
-  const { lang, currentUser } = useAppShell();
+  const { lang, role, currentUser } = useAppShell();
   const { data: branch } = useBranchData();
   const STORE = branch.store;
   const t = getT(lang);
   const [tab, setTab] = React.useState<Tab>("personal");
+  const [editing, setEditing] = React.useState(false);
+  const [draft, setDraft] = React.useState<PersonalForm>(() =>
+    snapshotPersonal(currentUser),
+  );
   const [pwOpen, setPwOpen] = React.useState(false);
   const [twoFa, setTwoFa] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!editing) {
+      setDraft(snapshotPersonal(currentUser));
+    }
+  }, [currentUser, editing]);
+
+  const startEditing = React.useCallback(() => {
+    setTab("personal");
+    setDraft(snapshotPersonal(currentUser));
+    setEditing(true);
+  }, [currentUser]);
+
+  const cancelEditing = React.useCallback(() => {
+    setDraft(snapshotPersonal(currentUser));
+    setEditing(false);
+  }, [currentUser]);
+
+  const savePersonal = React.useCallback(() => {
+    const name = draft.name.trim();
+    const email = draft.email.trim();
+    const phone = draft.phone.trim();
+
+    if (!name || !email || !phone) {
+      toast.error(
+        lang === "th"
+          ? "กรุณากรอกชื่อ อีเมล และเบอร์โทรให้ครบ"
+          : "Please fill in name, email, and phone",
+      );
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error(
+        lang === "th" ? "รูปแบบอีเมลไม่ถูกต้อง" : "Invalid email format",
+      );
+      return;
+    }
+
+    writeProfileOverrides(role, {
+      name,
+      email,
+      phone,
+      initials: initialsFromName(name),
+    });
+    setEditing(false);
+    toast.success(
+      lang === "th" ? "บันทึกโปรไฟล์แล้ว" : "Profile saved",
+    );
+  }, [draft, lang, role]);
 
   return (
     <div className="fade-in">
@@ -76,9 +149,13 @@ export function ProfilePage() {
               </Badge>
             </div>
           </div>
-          <Button variant="outline">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={editing ? cancelEditing : startEditing}
+          >
             <Edit />
-            {t.common.edit}
+            {editing ? t.common.cancel : t.common.edit}
           </Button>
         </CardContent>
       </Card>
@@ -96,21 +173,31 @@ export function ProfilePage() {
         <Card>
           <CardContent>
             <div className="grid grid-cols-1 gap-4.5 md:grid-cols-2">
-              <FormField label={t.profile.name} value={currentUser.name} />
+              <FormField
+                label={t.profile.name}
+                value={draft.name}
+                onChange={(value) => setDraft((d) => ({ ...d, name: value }))}
+                disabled={!editing}
+              />
               <FormField
                 label={t.profile.email}
-                value={currentUser.email}
+                value={draft.email}
+                onChange={(value) => setDraft((d) => ({ ...d, email: value }))}
                 icon={Mail}
+                disabled={!editing}
               />
               <FormField
                 label={t.profile.phone}
-                value="+66 81 234 5678"
+                value={draft.phone}
+                onChange={(value) => setDraft((d) => ({ ...d, phone: value }))}
                 icon={Phone}
+                disabled={!editing}
               />
               <FormField
                 label={t.profile.employeeId}
                 value={currentUser.employeeId}
                 mono
+                disabled
               />
               <FormField
                 label={t.profile.roleField}
@@ -124,8 +211,21 @@ export function ProfilePage() {
               />
             </div>
             <div className="mt-5.5 flex justify-end gap-2">
-              <Button variant="ghost">{t.common.cancel}</Button>
-              <Button>{t.common.save}</Button>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={!editing}
+                onClick={cancelEditing}
+              >
+                {t.common.cancel}
+              </Button>
+              <Button
+                type="button"
+                disabled={!editing}
+                onClick={savePersonal}
+              >
+                {t.common.save}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -142,7 +242,11 @@ export function ProfilePage() {
             </CardHeader>
             <CardContent>
               {!pwOpen ? (
-                <Button variant="outline" onClick={() => setPwOpen(true)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPwOpen(true)}
+                >
                   {t.profile.changePw}
                 </Button>
               ) : (
@@ -151,8 +255,25 @@ export function ProfilePage() {
                   <PwInput label={t.profile.newPw} showStrength />
                   <PwInput label={t.profile.confirmPw} />
                   <div className="flex gap-2">
-                    <Button className="flex-1">{t.common.save}</Button>
-                    <Button variant="outline" onClick={() => setPwOpen(false)}>
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      onClick={() => {
+                        setPwOpen(false);
+                        toast.success(
+                          lang === "th"
+                            ? "อัปเดตรหัสผ่านแล้ว (จำลอง)"
+                            : "Password updated (demo)",
+                        );
+                      }}
+                    >
+                      {t.common.save}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setPwOpen(false)}
+                    >
                       {t.common.cancel}
                     </Button>
                   </div>
@@ -188,7 +309,7 @@ export function ProfilePage() {
                       : "Not enabled — recommended for security"}
                 </div>
                 {twoFa && (
-                  <Button size="sm" variant="ghost">
+                  <Button type="button" size="sm" variant="ghost">
                     {lang === "th" ? "ตั้งค่าใหม่" : "Reconfigure"}
                   </Button>
                 )}
@@ -234,13 +355,20 @@ export function ProfilePage() {
 interface FormFieldProps {
   label: string;
   value: string;
+  onChange?: (value: string) => void;
   icon?: LucideIcon;
   mono?: boolean;
   disabled?: boolean;
 }
 
-function FormField({ label, value, icon: Icon, mono, disabled }: FormFieldProps) {
-  const [v, setV] = React.useState(value);
+function FormField({
+  label,
+  value,
+  onChange,
+  icon: Icon,
+  mono,
+  disabled,
+}: FormFieldProps) {
   return (
     <div>
       <Label className="mb-1.5">{label}</Label>
@@ -250,8 +378,9 @@ function FormField({ label, value, icon: Icon, mono, disabled }: FormFieldProps)
         )}
         <Input
           className={cn(mono && "mono", Icon && "pl-8")}
-          value={v}
-          onChange={(e) => setV(e.target.value)}
+          value={value}
+          onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+          readOnly={!onChange}
           disabled={disabled}
         />
       </div>

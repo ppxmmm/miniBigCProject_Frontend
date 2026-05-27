@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Search, Globe, Moon, Sun, Bell, Menu } from "lucide-react";
+import { Search, Globe, Moon, Sun, Menu } from "lucide-react";
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -16,6 +17,7 @@ interface TopbarProps {
   showSearch: boolean;
   currentUser: CurrentUser;
   onOpenSidebar: () => void;
+  right?: React.ReactNode;
 }
 
 export function Topbar({
@@ -24,12 +26,11 @@ export function Topbar({
   showSearch,
   currentUser,
   onOpenSidebar,
+  right,
 }: TopbarProps) {
   const tx = getT(lang);
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
-  const isDark = mounted && resolvedTheme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <header className="sticky top-0 z-30 flex h-15 items-center gap-3 border-b bg-card px-5 md:px-6">
@@ -54,6 +55,7 @@ export function Topbar({
       <div className="flex-1 md:hidden" />
 
       <div className="ml-auto flex items-center gap-1.5">
+        {right}
         <Button size="sm" variant="ghost" onClick={toggleLang} title="Language">
           <Globe />
           <span className="font-mono text-[11px] uppercase">{lang}</span>
@@ -66,12 +68,7 @@ export function Topbar({
         >
           {isDark ? <Sun /> : <Moon />}
         </Button>
-        <div className="relative">
-          <Button size="icon-sm" variant="ghost">
-            <Bell />
-          </Button>
-          <span className="absolute right-1.5 top-1.5 size-1.75 rounded-full bg-destructive ring-2 ring-card" />
-        </div>
+        <NotificationBell lang={lang} />
         <Separator orientation="vertical" className="mx-1 hidden h-5 md:block" />
         <div className="hidden items-center gap-2 md:flex">
           <Avatar className="size-7">

@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 
 export interface StoreInfo {
+  id?: number;
   code: string;
   name: LocalizedString;
   short: LocalizedString;
@@ -20,13 +21,21 @@ export interface StoreInfo {
   staffInitials: string;
 }
 
+export type BranchOption = StoreInfo & {
+  id: number;
+};
+
 export interface PaymentShare {
+  id?: number;
+  paymentMethodId?: number;
   th: string;
   en: string;
   v: number;
+  share: number;
 }
 
 export interface BranchData {
+  id: number | undefined;
   store: StoreInfo;
   hours: number[];
   hourly: number[];
@@ -42,6 +51,37 @@ export interface BranchData {
   deliveries: Delivery[];
   promos: Suggestion[];
   events: Suggestion[];
+}
+
+export function createEmptyBranchData(): BranchData {
+  return {
+    id: undefined,
+    store: {
+      id: undefined,
+      code: "",
+      name: { th: "", en: "" },
+      short: { th: "", en: "" },
+      address: { th: "", en: "" },
+      manager: { th: "", en: "" },
+      managerInitials: "",
+      staff: { th: "", en: "" },
+      staffInitials: "",
+    },
+    hours: [],
+    hourly: [],
+    hourlyYest: [],
+    daily: [],
+    dailyLast: [],
+    monthly: [],
+    category: [],
+    payments: [],
+    topProducts: [],
+    expiring: [],
+    lowStock: [],
+    deliveries: [],
+    promos: [],
+    events: [],
+  };
 }
 
 export function alertBadgeCount(data: BranchData): number {

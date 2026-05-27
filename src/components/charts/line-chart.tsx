@@ -5,25 +5,34 @@ import * as React from "react";
 interface LineChartProps {
   data: number[];
   compare?: number[] | null;
+  target?: number[] | null;
   labels?: readonly string[];
   height?: number;
   formatY?: (v: number) => string;
   formatX?: (l: string, i: number) => string;
   color?: string;
+  actualLabel?: string;
+  targetLabel?: string;
+  compareLabel?: string;
 }
 
 export function LineChart({
   data,
   compare,
+  target,
   labels,
   height = 260,
   formatY,
   formatX,
   color = "var(--primary)",
+  actualLabel = "Now",
+  targetLabel = "Target",
+  compareLabel = "Prev",
 }: LineChartProps) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [w, setW] = React.useState(600);
   const [hover, setHover] = React.useState<number | null>(null);
+  const reactId = React.useId();
 
   React.useEffect(() => {
     if (!ref.current) return;
@@ -40,7 +49,25 @@ export function LineChart({
     padB = 28;
   const cw = Math.max(200, w - padL - padR);
   const ch = height - padT - padB;
-  const all = [...data, ...(compare || [])];
+  if (data.length === 0) {
+    return (
+      <div ref={ref} style={{ width: "100%" }}>
+        <svg width={w} height={height} style={{ display: "block" }}>
+          <line
+            x1={padL}
+            y1={padT + ch}
+            x2={padL + cw}
+            y2={padT + ch}
+            className="chart-grid"
+          />
+        </svg>
+      </div>
+    );
+  }
+
+  const targetSeries = normalizeSeries(target, data.length);
+  const compareSeries = normalizeSeries(compare, data.length);
+  const all = [...data, ...targetSeries, ...compareSeries];
   const max = Math.max(...all) * 1.08;
   const min = 0;
   const stepX = data.length > 1 ? cw / (data.length - 1) : 0;
@@ -50,14 +77,18 @@ export function LineChart({
 
   const path = data.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
   const area = `${path} L${x(data.length - 1)},${padT + ch} L${x(0)},${padT + ch} Z`;
-  const cmpPath = compare
-    ? compare.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")
+  const targetPath = targetSeries.length
+    ? targetSeries.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")
+    : null;
+  const cmpPath = compareSeries.length
+    ? compareSeries.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ")
     : null;
 
   const ticks = 4;
   const tArr = Array.from({ length: ticks + 1 }, (_, i) => (max / ticks) * i);
 
   const onMove: React.MouseEventHandler<SVGSVGElement> = (e) => {
+    if (data.length < 2) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - rect.left;
     let idx = Math.round((px - padL) / stepX);
@@ -66,7 +97,6 @@ export function LineChart({
   };
   const onLeave = () => setHover(null);
 
-  const reactId = React.useId();
   const gradId = `ln-${reactId.replace(/:/g, "")}`;
 
   return (
@@ -125,20 +155,35 @@ export function LineChart({
             );
           })}
 
+        {/* target line */}
+        {targetPath && (
+          <path
+            d={targetPath}
+            fill="none"
+            stroke="var(--muted-foreground)"
+            strokeWidth="1.8"
+            strokeDasharray="6 6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="chart-target-line"
+          />
+        )}
+
         {/* compare line */}
         {cmpPath && (
           <path
             d={cmpPath}
             fill="none"
-            stroke="var(--muted-fg)"
+            stroke="var(--muted-foreground)"
             strokeWidth="1.5"
             strokeDasharray="3 4"
             opacity=".55"
+            className="chart-compare-line"
           />
         )}
 
         {/* area */}
-        <path d={area} fill={`url(#${gradId})`} />
+        <path d={area} fill={`url(#${gradId})`} className="chart-area-fill" />
         {/* main line */}
         <path
           d={path}
@@ -147,6 +192,8 @@ export function LineChart({
           strokeWidth="2"
           strokeLinejoin="round"
           strokeLinecap="round"
+          pathLength={1}
+          className="chart-main-line"
         />
 
         {hover != null && (
@@ -161,13 +208,23 @@ export function LineChart({
               strokeDasharray="2 3"
             />
             <circle cx={x(hover)} cy={y(data[hover])} r="5" className="chart-pt" />
-            {compare && (
+            {targetSeries[hover] != null && (
               <circle
                 cx={x(hover)}
-                cy={y(compare[hover])}
+                cy={y(targetSeries[hover])}
+                r="3.75"
+                fill="#fff"
+                stroke="var(--muted-foreground)"
+                strokeWidth="1.6"
+              />
+            )}
+            {compareSeries[hover] != null && (
+              <circle
+                cx={x(hover)}
+                cy={y(compareSeries[hover])}
                 r="3.5"
                 fill="#fff"
-                stroke="var(--muted-fg)"
+                stroke="var(--muted-foreground)"
                 strokeWidth="1.5"
               />
             )}
@@ -201,7 +258,7 @@ export function LineChart({
                 background: color,
               }}
             />
-            <span style={{ color: "var(--muted-fg)" }}>Now</span>
+            <span style={{ color: "var(--muted-foreground)" }}>{actualLabel}</span>
             <span
               className="num"
               style={{ marginLeft: "auto", fontWeight: 600 }}
@@ -209,7 +266,29 @@ export function LineChart({
               {formatY ? formatY(data[hover]) : data[hover]}
             </span>
           </div>
-          {compare && (
+          {targetSeries[hover] != null && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 4,
+              }}
+            >
+              <span
+                style={{
+                  width: 10,
+                  height: 0,
+                  borderTop: "2px dashed var(--muted-foreground)",
+                }}
+              />
+              <span style={{ color: "var(--muted-foreground)" }}>{targetLabel}</span>
+              <span className="num" style={{ marginLeft: "auto" }}>
+                {formatY ? formatY(targetSeries[hover]) : targetSeries[hover]}
+              </span>
+            </div>
+          )}
+          {compareSeries[hover] != null && (
             <div
               style={{
                 display: "flex",
@@ -223,13 +302,13 @@ export function LineChart({
                   width: 8,
                   height: 8,
                   borderRadius: 2,
-                  background: "var(--muted-fg)",
+                  background: "var(--muted-foreground)",
                   opacity: 0.55,
                 }}
               />
-              <span style={{ color: "var(--muted-fg)" }}>Prev</span>
+              <span style={{ color: "var(--muted-foreground)" }}>{compareLabel}</span>
               <span className="num" style={{ marginLeft: "auto" }}>
-                {formatY ? formatY(compare[hover]) : compare[hover]}
+                {formatY ? formatY(compareSeries[hover]) : compareSeries[hover]}
               </span>
             </div>
           )}
@@ -237,4 +316,9 @@ export function LineChart({
       )}
     </div>
   );
+}
+
+function normalizeSeries(series: number[] | null | undefined, length: number) {
+  if (!series?.length) return [];
+  return series.slice(0, length).filter((value) => Number.isFinite(value));
 }
