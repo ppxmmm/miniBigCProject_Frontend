@@ -309,8 +309,6 @@ function ActionDetailDialog({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {branch.expiring.map((item) => (
-                  <tr key={`${item.sku}-${item.exp.getTime()}-${item.loc}`}>
                 {branch.expiring.map((item, index) => (
                   <tr
                     key={`${item.sku}-${item.exp.getTime()}-${item.loc}-${index}`}
@@ -345,8 +343,6 @@ function ActionDetailDialog({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {branch.lowStock.map((item) => (
-                  <tr key={`${item.sku}-${item.loc}`}>
                 {branch.lowStock.map((item, index) => (
                   <tr key={`${item.sku}-${item.loc}-${index}`}>
                     <td className="px-3 py-2">

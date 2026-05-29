@@ -68,7 +68,8 @@ export function AIChatPanel({ lang, role }: AIChatPanelProps) {
       setIsLoading(true);
 
       try {
-        const reply = await sendAIChatMessage(message, role);
+        const history = messages.slice(-10).map(({ role, content }) => ({ role, content }));
+        const reply = await sendAIChatMessage(message, role, history);
         setMessages((current) => [
           ...current,
           {
@@ -91,7 +92,7 @@ export function AIChatPanel({ lang, role }: AIChatPanelProps) {
         setIsLoading(false);
       }
     },
-    [inputValue, isLoading, role, t.error],
+    [inputValue, isLoading, messages, role, t.error],
   );
 
   return (

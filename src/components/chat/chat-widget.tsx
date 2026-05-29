@@ -129,7 +129,11 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
       setLoading(true);
 
       try {
-        const { reply } = await askDonjai(trimmed, role);
+        const history = messages
+          .filter((message) => !message.error)
+          .slice(-10)
+          .map(({ role, content }) => ({ role, content }));
+        const { reply } = await askDonjai(trimmed, role, history);
         setMessages((prev) => [
           ...prev,
           {
@@ -155,7 +159,7 @@ function ChatPanel({ onClose }: { onClose: () => void }) {
         inputRef.current?.focus();
       }
     },
-    [loading, role, isTh],
+    [loading, messages, role, isTh],
   );
 
   const handleKeyDown = React.useCallback(

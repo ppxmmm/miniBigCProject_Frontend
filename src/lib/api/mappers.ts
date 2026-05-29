@@ -1,6 +1,5 @@
 import type { BranchData, BranchOption } from "@/lib/branch-data";
 import { mapDeliveryStatus } from "@/lib/branch-data";
-import type { ApiDashboardData, ApiStore } from "@/types/api";
 import type { ApiDashboardData, ApiPaymentMix, ApiStore } from "@/types/api";
 
 function parseDate(value: string): Date {
