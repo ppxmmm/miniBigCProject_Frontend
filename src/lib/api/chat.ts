@@ -2,6 +2,11 @@ import { apiUrl } from "@/lib/api/config";
 import { readAuthRole } from "@/lib/auth-session";
 import type { Role } from "@/types";
 
+export type AiChatHistoryMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export interface AiChatResponse {
   reply: string;
 }
@@ -9,16 +14,12 @@ export interface AiChatResponse {
 export async function askDonjai(
   message: string,
   role: Role,
+  history: AiChatHistoryMessage[] = [],
 ): Promise<AiChatResponse> {
   const response = await fetch(apiUrl("/api/v1/ai/chat"), {
     method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      "X-User-Role": role,
-    },
     headers: chatHeaders(role),
-    body: JSON.stringify({ message, role }),
+    body: JSON.stringify({ message, role, history }),
   });
 
   const data = (await response.json()) as { reply?: string; error?: string };
@@ -35,7 +36,10 @@ export async function askDonjai(
 }
 
 function chatHeaders(fallbackRole: Role): HeadersInit {
-  const headers = new Headers({ "Content-Type": "application/json" });
+  const headers = new Headers({
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  });
   headers.set("X-User-Role", readAuthRole() ?? fallbackRole);
   return headers;
 }
